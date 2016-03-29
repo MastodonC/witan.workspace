@@ -51,14 +51,15 @@
       (run! #(receiver (-> %
                            kafka-core/to-clojure
                            :value
-                           (String. "UTF-8")) receiver-ctx) stream))))
+                           (String. "UTF-8")
+                           (json/parse-string true)) receiver-ctx) stream))))
 
-(defrecord KafkaConsumer [host port topic receiver receiver-ctx]
+(defrecord KafkaConsumer [host port topic receiver receiver-ctx group-id]
   component/Lifecycle
   (start [component]
     (log/info "Starting Kafka consumer..." host port topic)
     (let [config {"zookeeper.connect" (str host ":" port)
-                  "group.id" "witan.workspace.consumer"
+                  "group.id" group-id
                   "auto.offset.reset" "smallest"
                   "auto.commit.enable" "true"}
           consumer (kafka-zk/consumer config)]

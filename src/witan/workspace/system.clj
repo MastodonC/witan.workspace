@@ -4,6 +4,7 @@
             [witan.workspace.components.kafka :refer [new-kafka-consumer
                                                       new-kafka-producer]]
             [witan.workspace.components.cassandra :refer [new-cassandra-connection]]
+            [witan.workspace.components.server :refer [new-http-server]]
             [witan.workspace.command          :refer [command-receiver]]
             [witan.workspace.event            :refer [event-receiver]]))
 
@@ -15,6 +16,7 @@
                 :cassandra {:host "127.0.0.1"
                             :keyspace "witan_workspace"}}]
     (component/system-map
+     :server                  (new-http-server)
      :db                      (new-cassandra-connection (-> config :cassandra))
      :kafka-producer          (new-kafka-producer (-> config :kafka :zk))
 
@@ -32,5 +34,4 @@
 
 (defn -main [& args]
   (component/start
-   (new-system))
-  (while true))
+   (new-system)))

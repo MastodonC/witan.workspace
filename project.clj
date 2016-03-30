@@ -10,6 +10,7 @@
                  [http-kit "2.1.19"]
                  [cc.qbits/alia-all "3.1.3"]
                  [cc.qbits/hayt "3.0.0"]
+                 [metosin/compojure-api "1.0.0"]
                  [prismatic/schema "1.0.5"]
                  [kixi/schema-contrib "0.2.0"]
                  [base64-clj "0.1.1"]]

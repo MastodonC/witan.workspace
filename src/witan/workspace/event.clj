@@ -9,14 +9,16 @@
   (log/debug "Received event" original)
   (try
     (let [args {:key event
-                :id (java.util.UUID/fromString id)
-                :version version
+                :id (java.util.UUID/fromString (:id params))
+                :event_id (java.util.UUID/fromString id)
+                :event_version version
                 :creator (java.util.UUID/fromString (or owner (:owner params)))
                 :origin origin
                 :received_at (java.util.Date.)
+                :params (prn-str params)
                 :original_payload (base64/encode (prn-str original))}]
       (log/debug "Saving event as" args)
-      (p/insert! db :events args {}))
+      (p/insert! db :events args))
     (catch Exception e (do
                          (log/error "An error occurred whilst storing the event:" e)
                          (st/print-stack-trace e)))))

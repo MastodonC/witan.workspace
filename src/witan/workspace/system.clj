@@ -16,8 +16,9 @@
                 :cassandra {:host "127.0.0.1"
                             :keyspace "witan_workspace"}}]
     (component/system-map
-     :server                  (new-http-server)
      :db                      (new-cassandra-connection (-> config :cassandra))
+     :server                  (component/using
+                               (new-http-server) [:db])
      :kafka-producer          (new-kafka-producer (-> config :kafka :zk))
 
      :kafka-consumer-commands (component/using

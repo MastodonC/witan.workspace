@@ -3,7 +3,8 @@
             [taoensso.timbre            :as log]
             [qbits.alia                 :as alia]
             [qbits.hayt                 :as hayt]
-            [witan.workspace.protocols  :as p :refer [Database]]))
+            [witan.workspace.protocols  :as p :refer [Database]]
+            [witan.workspace.util       :as util]))
 
 (defn create-connection
   [host keyspace]
@@ -29,11 +30,21 @@
       using (exec this (hayt/insert table (hayt/values row) (apply hayt/using using)))
       :else (exec this (hayt/insert table (hayt/values row)))))
   (insert! [this table row]
-    (p/insert! this table row {}))
+    (p/insert! this table (map util/hyphen->underscore row) {}))
   (select* [this table where]
-    (exec this (hayt/select table (hayt/where where))))
+    (let [result (->> (hayt/select table (hayt/where where))
+                      (exec this))
+          reformatted (map util/underscore->hyphen result)]
+      (if (coll? result)
+        (map (partial into {}) reformatted)
+        reformatted)))
   (select [this table what where]
-    (exec this (hayt/select table (apply hayt/columns what) (hayt/where where))))
+    (let [result (->> (hayt/select table (apply hayt/columns (map util/hyphen->underscore what)) (hayt/where where))
+                      (exec this))
+          reformatted (map util/underscore->hyphen result)]
+      (if (coll? result)
+        (map (partial into {}) reformatted)
+        reformatted)))
 
   component/Lifecycle
   (start [component]

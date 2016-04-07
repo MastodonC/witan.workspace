@@ -32,3 +32,22 @@
        (drop 1)
        (butlast)
        (apply str)))
+
+(defn replacer
+  "Calls  replacement function on different types"
+  [rfn x]
+  (condp = (type x)
+    clojure.lang.Keyword (-> x name rfn keyword)
+    clojure.lang.MapEntry (update x 0 (partial replacer rfn))
+    clojure.lang.PersistentArrayMap (map (partial replacer rfn) x)
+    java.lang.String (-> x rfn)))
+
+(defn underscore->hyphen
+  "Converts underscores to hyphens"
+  [x]
+  (replacer #(clojure.string/replace % #"_" "-") x))
+
+(defn hyphen->underscore
+  "Convers hyphens to underscores"
+  [x]
+  (replacer #(clojure.string/replace % #"-" "_") x))

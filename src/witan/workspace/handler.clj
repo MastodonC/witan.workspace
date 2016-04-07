@@ -3,23 +3,13 @@
             [ring.util.http-response   :refer :all]
             [taoensso.timbre           :as log]
             [schema.core               :as s]
-            [witan.workspace.protocols :as p]))
+            [witan.workspace.workspace :as w]))
 
-(defn get-events-by-id
-  [id db]
-  (p/select db :events [:key :params] {:id id}))
-
-(defn by-owner
-  [owner db]
-  (let [creation-events (p/select db :events [:id] {:key "workspace/created"})]
-    (ok (map :id creation-events))))
-
-(defn by-id
-  [id fields db]
-  (let [all-events (get-events-by-id id db)]
-    (ok all-events)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn params-vector ;; this probably should be middleare
+  [req k]
+  (let [x (-> req :params k)]
+    (if-not (map? x) nil
+            (vec (vals x)))))
 
 (def app
   (api
@@ -30,16 +20,16 @@
                    :description ""}
             :tags [{:name "api", :description "some apis"}]}}}
 
-   (GET "/by-owner" []
+   (GET "/by-owner" req
         :summary "Just a test"
         :components [db]
         :query-params [owner :- s/Uuid]
-        :return [s/Uuid]
-        (by-owner owner db))
+        (do
+          (log/debug req)
+          (w/by-owner owner (params-vector req :fields) db)))
 
-   (GET "/by-id" []
+   (GET "/by-id" req
         :summary "Just a test"
         :components [db]
-        :query-params [id :- s/Uuid
-                       {fields :- s/Str nil}]
-        (by-id id fields db))))
+        :query-params [id :- s/Uuid]
+        (w/by-id id (params-vector req :fields) db))))

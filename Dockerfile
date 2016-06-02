@@ -15,6 +15,6 @@ RUN mkdir /etc/service/workspace
 
 ADD target/witan.workspace-standalone.jar /srv/witan.workspace.jar
 
-ADD run.sh /etc/service/workspace/run
+ADD scripts/run.sh /etc/service/workspace/run
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

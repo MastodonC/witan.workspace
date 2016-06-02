@@ -14,11 +14,11 @@
                  [prismatic/schema "1.0.5"]
                  [kixi/schema-contrib "0.2.0"]
                  [base64-clj "0.1.1"]]
-  :uberjar-name "witan.gateway.jar"
   :source-paths ["src"]
   :main witan.workspace.system
   :profiles {:uberjar {:aot  [witan.workspace.system]
-                       :main witan.workspace.system}
+                       :main witan.workspace.system
+                       :uberjar-name "witan.workspace-standalone.jar"}
              :dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.4"]
                                   [ring/ring-mock "0.3.0"]]

@@ -10,7 +10,7 @@
   "Constructs the current development system."
   []
   (alter-var-root #'system
-    (constantly (new-system))))
+                  (constantly (new-system :development))))
 
 (defn start
   "Starts the current development system."

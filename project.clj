@@ -3,7 +3,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/core.async "0.2.371"]
                  [com.stuartsierra/component "0.3.1"]
-                 [com.taoensso/timbre "4.3.1"]
+                 [com.taoensso/timbre "4.4.0-alpha1"]
                  [clj-time "0.11.0"] ; required due to bug in `lein-ring uberwar`
                  [clj-kafka "0.3.4"]
                  [cheshire "5.5.0"]
@@ -13,7 +13,8 @@
                  [metosin/compojure-api "1.0.0"]
                  [prismatic/schema "1.0.5"]
                  [kixi/schema-contrib "0.2.0"]
-                 [base64-clj "0.1.1"]]
+                 [base64-clj "0.1.1"]
+                 [aero "1.0.0-beta2"]]
   :source-paths ["src"]
   :main witan.workspace.system
   :profiles {:uberjar {:aot  [witan.workspace.system]

@@ -1,0 +1,27 @@
+machine:
+  services:
+    - docker
+
+deployment:
+  #production:
+  #  tag: /release-.*/
+  #  commands:
+  #    - lein clean
+  #    - lein uberjar
+  #    - docker build -t mastodonc/witan.workspace .
+  #    - docker tag -f mastodonc/witan.workspace mastodonc/witan.workspace:latest
+  #    - docker tag -f mastodonc/witan.workspace mastodonc/witan.workspace:git-$(echo $CIRCLE_SHA1 | cut -c1-12)
+  #    - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+  #    - docker push mastodonc/witan.workspace
+  #    - ./deploy.sh $DEPLOY_IP production
+  staging:
+    branch: master
+    commands:
+      - lein clean
+      - lein uberjar
+      - docker build -t mastodonc/witan.workspace .
+      - docker tag -f mastodonc/witan.workspace mastodonc/witan.workspace:latest
+      - docker tag -f mastodonc/witan.workspace mastodonc/witan.workspace:git-$(echo $CIRCLE_SHA1 | cut -c1-12)
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push mastodonc/witan.workspace
+      - ./deploy.sh sandpit-staging-deploy.mastodonc.net staging

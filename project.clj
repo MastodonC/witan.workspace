@@ -17,8 +17,8 @@
   :uberjar-name "witan.gateway.jar"
   :source-paths ["src"]
   :main witan.workspace.system
-  :profiles {:uberjar {:aot  [witan.workspace.server]
-                       :main witan.workspace.server}
+  :profiles {:uberjar {:aot  [witan.workspace.system]
+                       :main witan.workspace.system}
              :dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.4"]
                                   [ring/ring-mock "0.3.0"]]

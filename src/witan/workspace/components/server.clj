@@ -7,15 +7,15 @@
             [witan.workspace.handler      :refer [app]]
             [taoensso.timbre              :as log]))
 
-(defrecord HttpKit []
+(defrecord HttpKit [port]
   component/Lifecycle
   (start [this]
-    (log/info "Server started at http://localhost:3001")
+    (log/info "Server started at http://localhost" port)
     (assoc this :http-kit (httpkit/run-server
                            (-> #'app
                                (wrap-components this)
                                (wrap-content-type "application/json"))
-                           {:port 3001})))
+                           {:port port})))
   (stop [this]
     (log/info "Stopping server")
     (if-let [http-kit (:http-kit this)]
@@ -23,5 +23,5 @@
     (dissoc this :http-kit)))
 
 (defn new-http-server
-  []
-  (->HttpKit))
+  [{:keys [port]}]
+  (->HttpKit port))

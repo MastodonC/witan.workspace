@@ -14,11 +14,12 @@
                              :port 2181}}
 
                 :cassandra {:host "127.0.0.1"
-                            :keyspace "witan_workspace"}}]
+                            :keyspace "witan_workspace"}
+                :webserver {:port 20015}}]
     (component/system-map
-     :db                      (new-cassandra-connection (-> config :cassandra))
+     :db                      (new-cassandra-connection (:cassandra config))
      :server                  (component/using
-                               (new-http-server) [:db])
+                               (new-http-server (:webserver config)) [:db])
      :kafka-producer          (new-kafka-producer (-> config :kafka :zk))
 
      :kafka-consumer-commands (component/using

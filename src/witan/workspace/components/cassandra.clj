@@ -1,0 +1,60 @@
+(ns witan.workspace.components.cassandra
+  (:require [com.stuartsierra.component :as component]
+            [taoensso.timbre            :as log]
+            [qbits.alia                 :as alia]
+            [qbits.hayt                 :as hayt]
+            [witan.workspace.protocols  :as p :refer [Database]]
+            [witan.workspace.util       :as util]))
+
+(defn create-connection
+  [host keyspace]
+  (alia/connect (alia/cluster {:contact-points [host]}) keyspace))
+
+(defn exec
+  [this x]
+  (if-let [conn (get this :connection)]
+    (try
+      (log/debug "Executing" (hayt/->raw x))
+      (alia/execute conn x)
+      (catch Exception e (log/error "Failed to execute database command:" (str e))))
+    (log/error "Unable to execute Cassandra comment - no connection")))
+
+(defrecord Cassandra [host keyspace]
+  Database
+  (drop-table! [this table]
+    (exec this (hayt/drop-table table (hayt/if-exists))))
+  (create-table! [this table columns]
+    (exec this (hayt/create-table table (hayt/column-definitions columns))))
+  (insert! [this table row {:keys [using]}]
+    (cond
+      using (exec this (hayt/insert table (hayt/values row) (apply hayt/using using)))
+      :else (exec this (hayt/insert table (hayt/values row)))))
+  (insert! [this table row]
+    (p/insert! this table (map util/hyphen->underscore row) {}))
+  (select* [this table where]
+    (let [result (->> (hayt/select table (hayt/where where))
+                      (exec this))
+          reformatted (map util/underscore->hyphen result)]
+      (if (coll? result)
+        (map (partial into {}) reformatted)
+        reformatted)))
+  (select [this table what where]
+    (let [result (->> (hayt/select table (apply hayt/columns (map util/hyphen->underscore what)) (hayt/where where))
+                      (exec this))
+          reformatted (map util/underscore->hyphen result)]
+      (if (coll? result)
+        (map (partial into {}) reformatted)
+        reformatted)))
+
+  component/Lifecycle
+  (start [component]
+    (log/info "Connecting to Cassandra..." host keyspace)
+    (let [conn (create-connection host keyspace)]
+      (assoc component :connection conn)))
+
+  (stop [component]
+    (log/info "Disconnecting from Cassandra...")
+    (dissoc component :connection)))
+
+(defn new-cassandra-connection [args]
+  (map->Cassandra args))

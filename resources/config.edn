@@ -4,7 +4,10 @@
 
  :cassandra {:host #profile {:development #or [#env CASSANDRA "127.0.0.1"]
                              :production "cassandra-dcos-node.cassandra.dcos.mesos"}
-             :keyspace "witan_workspace"}
+             :keyspace "witan_workspace"
+             :joplin "joplin.edn"
+             :replication-factor #profile {:development 1
+                                           :production 3}}
  :webserver {:port 20015}
  :log {:level #profile {:development :trace
                         :production :info}}}

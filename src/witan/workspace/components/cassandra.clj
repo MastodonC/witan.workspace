@@ -4,8 +4,19 @@
             [qbits.alia                 :as alia]
             [qbits.hayt                 :as hayt]
             [witan.workspace.protocols  :as p :refer [Database]]
-            [witan.workspace.util       :as util]))
+            [witan.workspace.util       :as util]
+            [clojure.java.io            :as io]
+            [joplin.repl                :as jrepl :refer [migrate]]))
 
+(defn create-workspace!
+  [host keyspace replication-factor]
+  (alia/execute
+   (alia/connect (alia/cluster {:contact-points [host]}))
+   (hayt/create-keyspace keyspace
+                         (hayt/if-exists false)
+                         (hayt/with {:replication
+                                     {:class "SimpleStrategy"
+                                      :replication_factor replication-factor}}))))
 (defn create-connection
   [host keyspace]
   (alia/connect (alia/cluster {:contact-points [host]}) keyspace))
@@ -19,7 +30,7 @@
       (catch Exception e (log/error "Failed to execute database command:" (str e))))
     (log/error "Unable to execute Cassandra comment - no connection")))
 
-(defrecord Cassandra [host keyspace]
+(defrecord Cassandra [host keyspace joplin profile replication-factor]
   Database
   (drop-table! [this table]
     (exec this (hayt/drop-table table (hayt/if-exists))))
@@ -48,6 +59,15 @@
 
   component/Lifecycle
   (start [component]
+    (log/info "Bootstrapping Cassandra...")
+    (create-workspace! host keyspace replication-factor)
+    (let [joplin-config (jrepl/load-config (io/resource joplin))]
+      (->> profile
+           (migrate joplin-config)
+           (with-out-str)
+           (clojure.string/split-lines)
+           (run! #(log/info "> JOPLIN:" %))))
+
     (log/info "Connecting to Cassandra..." host keyspace)
     (let [conn (create-connection host keyspace)]
       (assoc component :connection conn)))
@@ -56,5 +76,5 @@
     (log/info "Disconnecting from Cassandra...")
     (dissoc component :connection)))
 
-(defn new-cassandra-connection [args]
-  (map->Cassandra args))
+(defn new-cassandra-connection [args profile]
+  (map->Cassandra (assoc args :profile profile)))

@@ -23,7 +23,7 @@
 
      ;; create system
      (component/system-map
-      :db                      (new-cassandra-connection (:cassandra config))
+      :db                      (new-cassandra-connection (:cassandra config) profile)
       :server                  (component/using
                                 (new-http-server (:webserver config)) [:db])
       :kafka-producer          (new-kafka-producer (-> config :kafka :zk))

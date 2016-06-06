@@ -19,6 +19,7 @@
     (run! #(p/insert! db % args) tbls)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Queries
 
 (defn by-owner
   [owner fields db]

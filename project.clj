@@ -14,7 +14,7 @@
                  [prismatic/schema "1.0.5"]
                  [kixi/schema-contrib "0.2.0"]
                  [base64-clj "0.1.1"]
-                 [aero "1.0.0-beta2"]
+                 [aero "1.0.0-beta5"]
                  [joplin.core "0.3.6"]
                  [joplin.cassandra "0.3.6"]]
   :source-paths ["src"]

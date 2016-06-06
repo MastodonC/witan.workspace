@@ -42,6 +42,7 @@
                                                             :receiver event-receiver} (-> config :kafka :zk)))
                                 {:receiver-ctx :db})))))
 
-(defn -main [& args]
-  (component/start
-   (new-system :production)))
+(defn -main [& [arg]]
+  (let [profile (or (keyword arg) :production)]
+    (component/start
+     (new-system profile))))

@@ -1,8 +1,8 @@
 (ns witan.workspace.components.peer
   (:gen-class)
-  (:require [org.httpkit.client           :as http]
-            [com.stuartsierra.component   :as component]
-            [taoensso.timbre              :as log]))
+  (:require [org.httpkit.client         :as http]
+            [com.stuartsierra.component :as component]
+            [taoensso.timbre            :as log]))
 
 (defn- peer-request
   [method {:keys [host port]}]

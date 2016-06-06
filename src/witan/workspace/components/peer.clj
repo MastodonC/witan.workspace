@@ -6,10 +6,14 @@
 
 (defn- peer-request
   [method {:keys [host port]}]
-  (let [resp @(http/get (format "http://%s:%d/%s" host port method))]
-    (assoc
-     (select-keys resp [:status :body])
-     :headers {"Content-Type" "application/json"})))
+  (try
+    (let [resp @(http/get (format "http://%s:%d/%s" host port method))]
+      (assoc
+       (select-keys resp [:status :body])
+       :headers {"Content-Type" "application/json"}))
+    (catch Exception e (do
+                         (log/error "Peer HTTP threw an exception: " e)
+                         {:status 424}))))
 
 (def functions
   (partial peer-request "functions"))

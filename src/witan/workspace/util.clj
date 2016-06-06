@@ -28,7 +28,7 @@
   "The current date and time in iso-date-time format"
   []
   (->> (java.util.Date.)
-       (json/generate-string )
+       (json/generate-string)
        (drop 1)
        (butlast)
        (apply str)))
@@ -40,7 +40,7 @@
     clojure.lang.Keyword (-> x name rfn keyword)
     clojure.lang.MapEntry (update x 0 (partial replacer rfn))
     clojure.lang.PersistentArrayMap (map (partial replacer rfn) x)
-    java.lang.String (-> x rfn)))
+    java.lang.String (rfn x)))
 
 (defn underscore->hyphen
   "Converts underscores to hyphens"

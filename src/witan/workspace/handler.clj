@@ -1,9 +1,10 @@
 (ns witan.workspace.handler
-  (:require [compojure.api.sweet       :refer :all]
-            [ring.util.http-response   :refer :all]
-            [taoensso.timbre           :as log]
-            [schema.core               :as s]
-            [witan.workspace.workspace :as w]))
+  (:require [compojure.api.sweet             :refer :all]
+            [ring.util.http-response         :refer :all]
+            [taoensso.timbre                 :as log]
+            [schema.core                     :as s]
+            [witan.workspace.workspace       :as w]
+            [witan.workspace.components.peer :as p]))
 
 (defn params-vector ;; this probably should be middleare
   [req k]
@@ -32,4 +33,10 @@
         :summary "Just a test"
         :components [db]
         :query-params [id :- s/Uuid]
-        (w/by-id id (params-vector req :fields) db))))
+        (w/by-id id (params-vector req :fields) db))
+
+   (GET "/functions" req
+        :summary "Just a test"
+        :components [peer]
+        :query-params []
+        (p/functions peer))))

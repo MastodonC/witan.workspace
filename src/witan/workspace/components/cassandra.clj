@@ -43,15 +43,13 @@
   (insert! [this table row]
     (p/insert! this table (map util/hyphen->underscore row) {}))
   (select* [this table where]
-    (let [result (->> (hayt/select table (hayt/where where))
-                      (exec this))
+    (let [result (exec this (hayt/select table (hayt/where where)))
           reformatted (map util/underscore->hyphen result)]
       (if (coll? result)
         (map (partial into {}) reformatted)
         reformatted)))
   (select [this table what where]
-    (let [result (->> (hayt/select table (apply hayt/columns (map util/hyphen->underscore what)) (hayt/where where))
-                      (exec this))
+    (let [result (exec this (hayt/select table (apply hayt/columns (map util/hyphen->underscore what)) (hayt/where where)))
           reformatted (map util/underscore->hyphen result)]
       (if (coll? result)
         (map (partial into {}) reformatted)

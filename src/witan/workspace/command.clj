@@ -120,7 +120,7 @@
       (let [event (util/condas-> command c
                                  (not (contains? c :error)) (authorise-command c)
                                  (not (contains? c :error)) (process-command c)
-                                 (not (contains? c :error)) (s/validate ws/KafkaEvent c) )]
+                                 (not (contains? c :error)) (s/validate ws/KafkaEvent c))]
         (if (contains? event :error)
           (do
             (log/error "Command produced an error:" (:error event) msg)

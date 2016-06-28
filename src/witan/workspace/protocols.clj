@@ -17,3 +17,12 @@
     [this table where])
   (select
     [this table what where]))
+
+;;;;;;;;;;
+
+(defprotocol CommandProcessor
+  (params [this])
+  (process [this params]))
+
+(defmulti command-processor
+  (fn [command version] [command version]))

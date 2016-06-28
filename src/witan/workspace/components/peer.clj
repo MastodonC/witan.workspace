@@ -28,6 +28,9 @@
   component/Lifecycle
   (start [component]
     (log/info "Starting peer handler" host port)
+    component)
+  (stop [component]
+    (log/info "Stopping peer handler")
     component))
 
 (defn new-peer-handler

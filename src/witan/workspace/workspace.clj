@@ -1,7 +1,26 @@
 (ns witan.workspace.workspace
   (:require [taoensso.timbre           :as log]
             [witan.workspace.protocols :as p]
-            [clojure.stacktrace        :as st]))
+            [clojure.stacktrace        :as st]
+            [witan.gateway.schema      :as wgs]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Commands
+
+(defmethod p/command-processor
+  [:workspace/save "1.0"]
+  [c v]
+  (reify p/CommandProcessor
+    (params [_] {:workspace/to-save (get wgs/Workspace "1.0")})
+    (process [_ params]
+      (log/debug "SAVING WORKSPACE" params)
+      {:event :workspace/saved
+       :params (merge params
+                      {:id (java.util.UUID/randomUUID)})
+       :version "1.0"})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Events
 
 (defmulti process-event!
   (fn [{:keys [event version]} _] [(keyword event) version]))

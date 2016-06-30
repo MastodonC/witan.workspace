@@ -190,6 +190,10 @@
   {:onyx/name :witan/name
    :onyx/fn :witan/fn
    :onyx/type (constantly :function)
+   :onyx/params (fn [cat _]
+                  (when (contains? cat :witan/params) [:witan/params]))
+   :witan/params (fn [cat _]
+                   (when (contains? cat :witan/params) (:witan/params cat)))
    :onyx/batch-size (fn [_ config]
                       (get-in config [:batch-settings :onyx/batch-size]))})
 
@@ -201,9 +205,9 @@
           #(mapv (fn [cat]
                    (reduce-kv
                     (fn [acc onyx-key getter]
-                      (assoc acc
-                             onyx-key
-                             (getter cat config)))
+                      (if-let [r (getter cat config)]
+                        (assoc acc onyx-key r)
+                        acc))
                     {}
                     onyx-catalog-entry-template))
                  %)))

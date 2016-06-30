@@ -19,7 +19,7 @@
                  [joplin.core "0.3.6"]
                  [joplin.cassandra "0.3.6"]
                  [witan.gateway.schema "0.1.0-SNAPSHOT"]
-                 [witan.workspace-onyx-plugins "0.1.0-SNAPSHOT" :exclusions [org.onyxplatform/onyx commons-logging]]
+                 [witan.workspace-onyx-plugins "0.1.0" :exclusions [org.onyxplatform/onyx commons-logging]]
                  [com.rpl/specter "0.9.3"]]
   :source-paths ["src"]
   :main witan.workspace.system

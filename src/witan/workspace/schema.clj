@@ -67,7 +67,7 @@
    :witan/version s/Str ;; TODO check semver
    :witan/inputs [Input]
    (s/optional-key :witan/outputs) [Output]
-   (s/optional-key :witan/params) s/Any})
+   (s/optional-key :witan/params) {s/Keyword s/Any}})
 
 (def Workspace
   {:workflow  Workflow

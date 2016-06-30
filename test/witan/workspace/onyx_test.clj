@@ -115,6 +115,19 @@
             {:catalog
              (filter #(= :inc (:witan/name %))
                      fc/catalog)}
+            config))))
+  (testing "Function with params gets relabeled"
+    (is (= {:catalog
+            [{:onyx/name :mulx
+              :onyx/fn   :witan.workspace.function-catalog/mulX
+              :onyx/type :function
+              :onyx/batch-size (batch-size config)
+              :witan/params {:x 3}
+              :onyx/params [:witan/params]}]}
+           (o/witan-catalog->onyx-catalog
+            {:catalog
+             (filter #(= :mulx (:witan/name %))
+                     fc/catalog)}
             config)))))
 
 

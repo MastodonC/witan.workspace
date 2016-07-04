@@ -6,10 +6,6 @@
 
 (use-fixtures :once st/validate-schemas)
 
-(defn enough?
-  [x]
-  (< 10 x))
-
 (defn workspace
   [{:keys [workflow contracts catalog] :as raw}]
   (->
@@ -128,7 +124,22 @@
             {:catalog
              (filter #(= :mulx (:witan/name %))
                      fc/catalog)}
-            config)))))
+            config))))
+  (testing "Function wrapper is applied"
+    (is (= {:catalog
+            [{:onyx/name :mulx
+              :onyx/fn   :witan.workspace.function-catalog/test-wrapper
+              :onyx/type :function
+              :onyx/batch-size (batch-size config)
+              :onyx/params [:witan/fn :witan/params]
+              :witan/params {:x 3}
+              :witan/fn :witan.workspace.function-catalog/mulX}]}
+           (o/witan-catalog->onyx-catalog
+            {:catalog
+             (filter #(= :mulx (:witan/name %))
+                     fc/catalog)}
+            (assoc config
+                   :fn-wrapper :witan.workspace.function-catalog/test-wrapper))))))
 
 
 (deftest witan-workspace->onyx-job

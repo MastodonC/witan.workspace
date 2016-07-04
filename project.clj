@@ -28,5 +28,6 @@
                        :uberjar-name "witan.workspace-standalone.jar"}
              :dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.4"]
-                                  [ring/ring-mock "0.3.0"]]
+                                  [ring/ring-mock "0.3.0"]
+                                  [witan.workspace-api "0.1.5"]]
                    :repl-options {:init-ns user}}})

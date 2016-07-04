@@ -188,14 +188,26 @@
 
 (def onyx-catalog-entry-template
   {:onyx/name :witan/name
-   :onyx/fn :witan/fn
+   :onyx/fn (fn [cat config]
+              (if (contains? config :fn-wrapper)
+                (get config :fn-wrapper)
+                (get cat :witan/fn)))
    :onyx/type (constantly :function)
-   :onyx/params (fn [cat _]
-                  (when (contains? cat :witan/params) [:witan/params]))
+   :onyx/batch-size (fn [_ config]
+                      (get-in config [:batch-settings :onyx/batch-size]))
+   :onyx/params (fn [cat config]
+                  (->> (conj []
+                             (when (contains? config :fn-wrapper) :witan/fn)
+                             (when (contains? cat :witan/params) :witan/params))
+                       (remove nil?)
+                       (vec)
+                       (not-empty)))
+   ;;;;;;;
    :witan/params (fn [cat _]
                    (when (contains? cat :witan/params) (:witan/params cat)))
-   :onyx/batch-size (fn [_ config]
-                      (get-in config [:batch-settings :onyx/batch-size]))})
+   :witan/fn (fn [cat config]
+               (when (contains? config :fn-wrapper)
+                 (:witan/fn cat)))})
 
 (defn witan-catalog->onyx-catalog
   [{:keys [catalog] :as workspace}

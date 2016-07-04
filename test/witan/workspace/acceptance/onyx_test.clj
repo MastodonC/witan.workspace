@@ -42,17 +42,32 @@
         result))))
 
 (deftest linear-workspace-executed-on-onyx
-  (let [state {:test "blah" :number 0}]
-    (is (= (fc/my-inc state)
-           (run-job
-            (add-source-and-sink
-             (o/workspace->onyx-job
-              {:workflow [[:in :inc]
-                          [:inc :out]]
-               :catalog [{:witan/name :inc
-                          :witan/fn :witan.workspace.function-catalog/my-inc}]}
-              config))
-            state)))))
+  (testing "Linear workspace with no params"
+    (let [state {:test "blah" :number 0}]
+      (is (= (fc/my-inc state)
+             (run-job
+              (add-source-and-sink
+               (o/workspace->onyx-job
+                {:workflow [[:in :inc]
+                            [:inc :out]]
+                 :catalog [{:witan/name :inc
+                            :witan/fn :witan.workspace.function-catalog/my-inc}]}
+                config))
+              state)))))
+  (testing "Linear workspace with params"
+    (let [state {:test "blah" :number 1}
+          params {:x 3}
+          onyx-job (add-source-and-sink
+                    (o/workspace->onyx-job
+                     {:workflow [[:in :mulX]
+                                 [:mulX :out]]
+                      :catalog [{:witan/name :mulX
+                                 :witan/fn :witan.workspace.function-catalog/mulX
+                                 :witan/params params}]}
+                     config))]
+      (is (= (fc/mulX state params)
+             {:test "blah" :number 3}
+             (run-job onyx-job state))))))
 
 (deftest looping-workspace-executed-on-onyx
   (let [state {:test "blah" :number 0}]
@@ -69,7 +84,7 @@
 
 (deftest merge-workspace-executed-on-onyx
   (let [state {:test "blah" :number 0}]
-    (is (= (fc/sum (merge (fc/mult state) (fc/my-inc state)))
+    (is (= (fc/add* (merge (fc/mul2* state) (fc/my-inc state)))
            (run-job
             (add-source-and-sink
              (o/workspace->onyx-job
@@ -81,9 +96,9 @@
                :catalog [{:witan/name :inc
                           :witan/fn :witan.workspace.function-catalog/my-inc}
                          {:witan/name :mult
-                          :witan/fn :witan.workspace.function-catalog/mult}
+                          :witan/fn :witan.workspace.function-catalog/mul2*}
                          {:witan/name :sum
-                          :witan/fn :witan.workspace.function-catalog/sum}]
+                          :witan/fn :witan.workspace.function-catalog/add*}]
                :task-scheduler :onyx.task-scheduler/balanced}
               config))
             state)))))

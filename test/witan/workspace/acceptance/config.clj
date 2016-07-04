@@ -18,4 +18,5 @@
                  :onyx.messaging/backpressure-strategy :high-restart-latency}
    :redis-config {:redis/uri "redis://localhost:6379"}
    :batch-settings {:onyx/batch-size 1
-                    :onyx/batch-timeout 1000}})
+                    :onyx/batch-timeout 1000}
+   :fn-wrapper :witan.workspace-api.onyx/default-wrapper})

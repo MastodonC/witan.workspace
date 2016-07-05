@@ -1,4 +1,5 @@
-(ns witan.workspace.acceptance.config)
+(ns witan.workspace.acceptance.config
+  (:require [witan.workspace-api.onyx :refer [default-fn-wrapper default-pred-wrapper]]))
 
 (def config
   {:env-config {:onyx/tenancy-id "testcluster"
@@ -18,4 +19,6 @@
                  :onyx.messaging/backpressure-strategy :high-restart-latency}
    :redis-config {:redis/uri "redis://localhost:6379"}
    :batch-settings {:onyx/batch-size 1
-                    :onyx/batch-timeout 1000}})
+                    :onyx/batch-timeout 1000}
+   :fn-wrapper :witan.workspace-api.onyx/default-fn-wrapper
+   :pred-wrapper :witan.workspace-api.onyx/default-pred-wrapper})

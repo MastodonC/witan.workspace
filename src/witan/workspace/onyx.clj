@@ -73,15 +73,17 @@
   (keyword (str "state-" (name (first branch)) "-" (str (java.util.UUID/randomUUID)))))
 
 (defn flow-condition
-  [node pred]
-  [{:flow/from (first node)
-    :flow/to [(second node)]
-    :flow/predicate pred}])
+  [node pred params]
+  [(merge {:flow/from (first node)
+           :flow/to [(second node)]
+           :flow/predicate pred}
+          params)])
 
 (defn branch-expanders
   [config]
   (let [redis-uri (:redis/uri (:redis-config config))
-        batch-settings (:batch-settings config)]
+        batch-settings (:batch-settings config)
+        pred-wrapper (:pred-wrapper config)]
     (fn
       [branch]
       (let [write-state (write-state-kw branch)
@@ -89,7 +91,10 @@
             redis-key (redis-key-for branch)
             loop-node [(first branch) write-state]
             exit-node [(first branch) (ssecond branch)]
-            branch-fn (flast branch)]
+            pred-params (when pred-wrapper {:witan/fn (flast branch)})
+            branch-fn (if pred-wrapper
+                        [pred-wrapper :witan/fn]
+                        (flast branch))]
         (fn [raw]
           (->> raw
                (transform
@@ -109,12 +114,14 @@
                 fc-end
                 (flow-condition
                  loop-node
-                 [:not branch-fn]))
+                 [:not branch-fn]
+                 pred-params))
                (setval
                 fc-end
                 (flow-condition
                  exit-node
-                 [branch-fn]))
+                 branch-fn
+                 pred-params))
                (add-task (redis-tasks/writer write-state redis-uri :redis/set redis-key batch-settings))
                (add-task (redis-tasks/reader read-state redis-uri redis-key batch-settings))))))))
 
@@ -188,10 +195,25 @@
 
 (def onyx-catalog-entry-template
   {:onyx/name :witan/name
-   :onyx/fn :witan/fn
+   :onyx/fn (fn [cat config]
+              (if (contains? config :fn-wrapper)
+                (get config :fn-wrapper)
+                (get cat :witan/fn)))
    :onyx/type (constantly :function)
    :onyx/batch-size (fn [_ config]
-                      (get-in config [:batch-settings :onyx/batch-size]))})
+                      (get-in config [:batch-settings :onyx/batch-size]))
+   :onyx/params (fn [cat config]
+                  (->> (conj []
+                             (when (contains? config :fn-wrapper) :witan/fn)
+                             (when (contains? cat :witan/params) :witan/params))
+                       (keep identity)
+                       (vec)
+                       (not-empty)))
+   ;;;;;;;
+   :witan/params (fn [cat _] (:witan/params cat))
+   :witan/fn (fn [cat config]
+               (when (contains? config :fn-wrapper)
+                 (:witan/fn cat)))})
 
 (defn witan-catalog->onyx-catalog
   [{:keys [catalog] :as workspace}
@@ -201,9 +223,9 @@
           #(mapv (fn [cat]
                    (reduce-kv
                     (fn [acc onyx-key getter]
-                      (assoc acc
-                             onyx-key
-                             (getter cat config)))
+                      (if-let [r (getter cat config)]
+                        (assoc acc onyx-key r)
+                        acc))
                     {}
                     onyx-catalog-entry-template))
                  %)))

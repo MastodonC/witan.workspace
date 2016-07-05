@@ -6,10 +6,6 @@
 
 (use-fixtures :once st/validate-schemas)
 
-(defn enough?
-  [x]
-  (< 10 x))
-
 (defn workspace
   [{:keys [workflow contracts catalog] :as raw}]
   (->
@@ -51,7 +47,14 @@
                                 [:inc [:enough? :out :inc]]]
                      :catalog []
                      :task-scheduler :onyx.task-scheduler/balanced}
-                    config)]
+                    config)
+          onyx-job-pred-wraps (o/witan-workflow->onyx-workflow
+                               {:workflow [[:in :inc]
+                                           [:inc [:enough? :out :inc]]]
+                                :catalog []
+                                :task-scheduler :onyx.task-scheduler/balanced}
+                               (assoc config
+                                      :pred-wrapper :witan.workspace.function-catalog/test-pred-wrapper))]
       (is (= [[:in :write-state-inc]
               [:inc :write-state-inc]
               [:read-state-inc :inc]
@@ -61,9 +64,18 @@
                :flow/to [:write-state-inc],
                :flow/predicate [:not :enough?]}
               {:flow/from :inc,
-               :flow/to [:out], :flow/predicate
-               [:enough?]}]
+               :flow/to [:out],
+               :flow/predicate :enough?}]
              (:flow-conditions onyx-job)))
+      (is (= [{:flow/from :inc,
+               :flow/to [:write-state-inc],
+               :flow/predicate [:not [:witan.workspace.function-catalog/test-pred-wrapper :witan/fn]]
+               :witan/fn :enough?}
+              {:flow/from :inc,
+               :flow/to [:out],
+               :flow/predicate [:witan.workspace.function-catalog/test-pred-wrapper :witan/fn]
+               :witan/fn :enough?}]
+             (:flow-conditions onyx-job-pred-wraps)))
       (is (= [{:onyx/name :write-state-inc,
                :onyx/plugin :onyx.plugin.redis/writer,
                :onyx/type :output,
@@ -115,7 +127,35 @@
             {:catalog
              (filter #(= :inc (:witan/name %))
                      fc/catalog)}
-            config)))))
+            config))))
+  (testing "Function with params gets relabeled"
+    (is (= {:catalog
+            [{:onyx/name :mulx
+              :onyx/fn   :witan.workspace.function-catalog/mulX
+              :onyx/type :function
+              :onyx/batch-size (batch-size config)
+              :witan/params {:x 3}
+              :onyx/params [:witan/params]}]}
+           (o/witan-catalog->onyx-catalog
+            {:catalog
+             (filter #(= :mulx (:witan/name %))
+                     fc/catalog)}
+            config))))
+  (testing "Function wrapper is applied"
+    (is (= {:catalog
+            [{:onyx/name :mulx
+              :onyx/fn   :witan.workspace.function-catalog/test-wrapper
+              :onyx/type :function
+              :onyx/batch-size (batch-size config)
+              :onyx/params [:witan/fn :witan/params]
+              :witan/params {:x 3}
+              :witan/fn :witan.workspace.function-catalog/mulX}]}
+           (o/witan-catalog->onyx-catalog
+            {:catalog
+             (filter #(= :mulx (:witan/name %))
+                     fc/catalog)}
+            (assoc config
+                   :fn-wrapper :witan.workspace.function-catalog/test-wrapper))))))
 
 
 (deftest witan-workspace->onyx-job

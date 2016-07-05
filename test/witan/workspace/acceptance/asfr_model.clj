@@ -133,13 +133,14 @@
 
 (deftest crazy-workflow-works
   (let [state {}
-        onyx-result (run-job
-                     (add-source-and-sink
-                      (o/workspace->onyx-job
-                       {:workflow witan-workflow
-                        :catalog catalog}
-                       config))
-                     state)
+        onyx-job (add-source-and-sink
+                  (o/workspace->onyx-job
+                   {:workflow witan-workflow
+                    :catalog catalog}
+                   config))
+        _ (println "JOB:")
+        _ (clojure.pprint/pprint onyx-job)
+        onyx-result (run-job onyx-job state)
         diff (clojure.set/difference (-> result keys set) (-> onyx-result keys set))
         _ (when (not-empty diff) (println ">>> DIFF" diff))]
     (is (= result onyx-result))))

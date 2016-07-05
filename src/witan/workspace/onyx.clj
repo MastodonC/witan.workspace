@@ -200,6 +200,7 @@
                 (get config :fn-wrapper)
                 (get cat :witan/fn)))
    :onyx/type (constantly :function)
+   :onyx/n-peers (constantly 1)
    :onyx/batch-size (fn [_ config]
                       (get-in config [:batch-settings :onyx/batch-size]))
    :onyx/params (fn [cat config]

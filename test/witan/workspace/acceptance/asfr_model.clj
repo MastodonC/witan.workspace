@@ -48,24 +48,23 @@
   (let [b (symbol "bundle")]
     `(defn ~(symbol (namespace kw) (name kw))
        [~b]
-       (println "-" ~kw ~b)
        (assoc ~b ~kw true))))
 
-(defn births [bundle] (println "-" :births bundle) (assoc bundle :births true))
-(defn get-births-data-year [bundle] (println "-" :get-births-data-year bundle) (assoc bundle :get-births-data-year true))
-(defn births-pool [bundle] (println "-" :births-pool bundle) (assoc bundle :births-pool true))
-(defn estimated-sya-births-pool [bundle] (println "-" :estimated-sya-births-pool bundle) (assoc bundle :estimated-sya-births-pool true))
-(defn at-risk-this-fert-last-year [bundle] (println "-" :at-risk-this-fert-last-year bundle) (assoc bundle :at-risk-this-fert-last-year true))
-(defn fert-rate-without-45-49 [bundle] (println "-" :fert-rate-without-45-49 bundle) (assoc bundle :fert-rate-without-45-49 true))
-(defn historic-fertility [bundle] (println "-" :historic-fertility bundle) (assoc bundle :historic-fertility true))
-(defn fert-rate-with-45-49 [bundle] (println "-" :fert-rate-with-45-49 bundle) (assoc bundle :fert-rate-with-45-49 true))
-(defn estimated-sya-births [bundle] (println "-" :estimated-sya-births bundle) (assoc bundle :estimated-sya-births true))
-(defn scaling-factors [bundle] (println "-" :scaling-factors bundle) (assoc bundle :scaling-factors true))
-(defn actual-births [bundle] (println "-" :actual-births bundle) (assoc bundle :actual-births true))
-(defn at-risk-last-birth-year [bundle] (println "-" :at-risk-last-birth-year bundle) (assoc bundle :at-risk-last-birth-year true))
-(defn estimated-births [bundle] (println "-" :estimated-births bundle) (assoc bundle :estimated-births true))
-(defn at-risk-last-fert-last-year [bundle] (println "-" :at-risk-last-fert-last-year bundle) (assoc bundle :at-risk-last-fert-last-year true))
-(defn at-risk-this-birth-year [bundle] (println "-" :at-risk-this-birth-year bundle) (assoc bundle :at-risk-this-birth-year true))
+(defn births [bundle] (assoc bundle :births true))
+(defn get-births-data-year [bundle] (assoc bundle :get-births-data-year true))
+(defn births-pool [bundle] (assoc bundle :births-pool true))
+(defn estimated-sya-births-pool [bundle] (assoc bundle :estimated-sya-births-pool true))
+(defn at-risk-this-fert-last-year [bundle] (assoc bundle :at-risk-this-fert-last-year true))
+(defn fert-rate-without-45-49 [bundle] (assoc bundle :fert-rate-without-45-49 true))
+(defn historic-fertility [bundle] (assoc bundle :historic-fertility true))
+(defn fert-rate-with-45-49 [bundle] (assoc bundle :fert-rate-with-45-49 true))
+(defn estimated-sya-births [bundle] (assoc bundle :estimated-sya-births true))
+(defn scaling-factors [bundle] (assoc bundle :scaling-factors true))
+(defn actual-births [bundle] (assoc bundle :actual-births true))
+(defn at-risk-last-birth-year [bundle] (assoc bundle :at-risk-last-birth-year true))
+(defn estimated-births [bundle] (assoc bundle :estimated-births true))
+(defn at-risk-last-fert-last-year [bundle] (assoc bundle :at-risk-last-fert-last-year true))
+(defn at-risk-this-birth-year [bundle] (assoc bundle :at-risk-this-birth-year true))
 
 (comment "Smash the set of the function names through create-function to get default function defs")
 
@@ -138,9 +137,5 @@
                    {:workflow witan-workflow
                     :catalog catalog}
                    config))
-        _ (println "JOB:")
-        _ (clojure.pprint/pprint onyx-job)
-        onyx-result (run-job onyx-job state)
-        diff (clojure.set/difference (-> result keys set) (-> onyx-result keys set))
-        _ (when (not-empty diff) (println ">>> DIFF" diff))]
+        onyx-result (run-job onyx-job state)]
     (is (= result onyx-result))))

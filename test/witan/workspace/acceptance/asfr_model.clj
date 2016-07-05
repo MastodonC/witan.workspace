@@ -41,7 +41,7 @@
                      [:scaling-factors :historic-fertility]
                      [:historic-fertility :out]])
 
-(def all-functions (set witan-workflow))
+(def all-functions (-> witan-workflow flatten set))
 
 (defn create-function
   [kw]
@@ -68,13 +68,10 @@
 
 (comment "Smash the set of the function names through create-function to get default function defs")
 
-
 (defn create-catalog
   [kw]
   {:witan/name kw
    :witan/fn (keyword (str "witan.workspace.acceptance.asfr-model/" (name kw)))})
-
-
 
 (def catalog
   [{:witan/fn :witan.workspace.acceptance.asfr-model/births, :witan/name :births}
@@ -92,7 +89,6 @@
    {:witan/fn :witan.workspace.acceptance.asfr-model/estimated-births, :witan/name :estimated-births}
    {:witan/fn :witan.workspace.acceptance.asfr-model/at-risk-last-fert-last-year, :witan/name :at-risk-last-fert-last-year}
    {:witan/fn :witan.workspace.acceptance.asfr-model/at-risk-this-birth-year, :witan/name :at-risk-this-birth-year}])
-
 
 (defn redis-conn []
   {:spec {:uri (get-in config [:redis-config :redis/uri])}})
@@ -135,12 +131,11 @@
    :at-risk-this-birth-year true})
 
 (deftest crazy-workflow-works
-  (let [state {}]
-    (is (= result
-           (run-job
-            (add-source-and-sink
-             (o/workspace->onyx-job
-              {:workflow witan-workflow
-               :catalog catalog}
-              config))
-            state)))))
+  (let [state {}
+        onyx-job (add-source-and-sink
+                  (o/workspace->onyx-job
+                   {:workflow witan-workflow
+                    :catalog catalog}
+                   config))
+        onyx-result (run-job onyx-job state)]
+    (is (= result onyx-result))))

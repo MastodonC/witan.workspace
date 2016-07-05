@@ -200,8 +200,12 @@
                 (get config :fn-wrapper)
                 (get cat :witan/fn)))
    :onyx/type (constantly :function)
+   :onyx/n-peers (fn [_ config]
+                   (get-in config [:task-settings :onyx/n-peers]))
    :onyx/batch-size (fn [_ config]
                       (get-in config [:batch-settings :onyx/batch-size]))
+   :onyx/batch-timeout (fn [_ config]
+                         (get-in config [:batch-settings :onyx/batch-timeout]))
    :onyx/params (fn [cat config]
                   (->> (conj []
                              (when (contains? config :fn-wrapper) :witan/fn)

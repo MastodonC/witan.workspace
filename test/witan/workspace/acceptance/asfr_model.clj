@@ -61,23 +61,18 @@
 (defn fert-rate-with-45-49 [bundle] (println "-" :fert-rate-with-45-49 bundle) (assoc bundle :fert-rate-with-45-49 true))
 (defn estimated-sya-births [bundle] (println "-" :estimated-sya-births bundle) (assoc bundle :estimated-sya-births true))
 (defn scaling-factors [bundle] (println "-" :scaling-factors bundle) (assoc bundle :scaling-factors true))
-(defn out [bundle] (println "-" :out bundle) (assoc bundle :out true))
 (defn actual-births [bundle] (println "-" :actual-births bundle) (assoc bundle :actual-births true))
 (defn at-risk-last-birth-year [bundle] (println "-" :at-risk-last-birth-year bundle) (assoc bundle :at-risk-last-birth-year true))
 (defn estimated-births [bundle] (println "-" :estimated-births bundle) (assoc bundle :estimated-births true))
 (defn at-risk-last-fert-last-year [bundle] (println "-" :at-risk-last-fert-last-year bundle) (assoc bundle :at-risk-last-fert-last-year true))
-(defn in [bundle] (println "-" :in bundle) (assoc bundle :in true))
 (defn at-risk-this-birth-year [bundle] (println "-" :at-risk-this-birth-year bundle) (assoc bundle :at-risk-this-birth-year true))
 
 (comment "Smash the set of the function names through create-function to get default function defs")
-
 
 (defn create-catalog
   [kw]
   {:witan/name kw
    :witan/fn (keyword (str "witan.workspace.acceptance.asfr-model/" (name kw)))})
-
-
 
 (def catalog
   [{:witan/fn :witan.workspace.acceptance.asfr-model/births, :witan/name :births}
@@ -95,7 +90,6 @@
    {:witan/fn :witan.workspace.acceptance.asfr-model/estimated-births, :witan/name :estimated-births}
    {:witan/fn :witan.workspace.acceptance.asfr-model/at-risk-last-fert-last-year, :witan/name :at-risk-last-fert-last-year}
    {:witan/fn :witan.workspace.acceptance.asfr-model/at-risk-this-birth-year, :witan/name :at-risk-this-birth-year}])
-
 
 (defn redis-conn []
   {:spec {:uri (get-in config [:redis-config :redis/uri])}})

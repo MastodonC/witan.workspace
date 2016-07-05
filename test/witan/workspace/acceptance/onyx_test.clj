@@ -21,18 +21,6 @@
                                               default-pred-wrapper
                                               kw->fn]]))
 
-#_(defn test-fn-wrapper
-    ([fn segment]
-     ((kw->fn fn) segment))
-    ([fn params segment]
-     ((kw->fn fn) segment params)))
-
-#_(defn test-pred-wrapper
-    ([_ _ segment _ fn]
-     ((kw->fn fn) segment))
-    ([_ _ segment _ fn params]
-     ((kw->fn fn) segment params)))
-
 (defn redis-conn []
   {:spec {:uri (get-in config [:redis-config :redis/uri])}})
 

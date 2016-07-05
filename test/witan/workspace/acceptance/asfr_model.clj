@@ -41,30 +41,33 @@
                      [:scaling-factors :historic-fertility]
                      [:historic-fertility :out]])
 
-(def all-functions (set witan-workflow))
+(def all-functions (set (flatten witan-workflow)))
 
 (defn create-function
   [kw]
   (let [b (symbol "bundle")]
     `(defn ~(symbol (namespace kw) (name kw))
        [~b]
+       (println ">" ~kw)
        (assoc ~b ~kw true))))
 
-(defn births [bundle] (assoc bundle :births true))
-(defn get-births-data-year [bundle] (assoc bundle :get-births-data-year true))
-(defn births-pool [bundle] (assoc bundle :births-pool true))
-(defn estimated-sya-births-pool [bundle] (assoc bundle :estimated-sya-births-pool true))
-(defn at-risk-this-fert-last-year [bundle] (assoc bundle :at-risk-this-fert-last-year true))
-(defn fert-rate-without-45-49 [bundle] (assoc bundle :fert-rate-without-45-49 true))
-(defn historic-fertility [bundle] (assoc bundle :historic-fertility true))
-(defn fert-rate-with-45-49 [bundle] (assoc bundle :fert-rate-with-45-49 true))
-(defn estimated-sya-births [bundle] (assoc bundle :estimated-sya-births true))
-(defn scaling-factors [bundle] (assoc bundle :scaling-factors true))
-(defn actual-births [bundle] (assoc bundle :actual-births true))
-(defn at-risk-last-birth-year [bundle] (assoc bundle :at-risk-last-birth-year true))
-(defn estimated-births [bundle] (assoc bundle :estimated-births true))
-(defn at-risk-last-fert-last-year [bundle] (assoc bundle :at-risk-last-fert-last-year true))
-(defn at-risk-this-birth-year [bundle] (assoc bundle :at-risk-this-birth-year true))
+(clojure.core/defn births [bundle] (clojure.core/println ">" :births) (clojure.core/assoc bundle :births true))
+(clojure.core/defn get-births-data-year [bundle] (clojure.core/println ">" :get-births-data-year) (clojure.core/assoc bundle :get-births-data-year true))
+(clojure.core/defn births-pool [bundle] (clojure.core/println ">" :births-pool) (clojure.core/assoc bundle :births-pool true))
+(clojure.core/defn estimated-sya-births-pool [bundle] (clojure.core/println ">" :estimated-sya-births-pool) (clojure.core/assoc bundle :estimated-sya-births-pool true))
+(clojure.core/defn at-risk-this-fert-last-year [bundle] (clojure.core/println ">" :at-risk-this-fert-last-year) (clojure.core/assoc bundle :at-risk-this-fert-last-year true))
+(clojure.core/defn fert-rate-without-45-49 [bundle] (clojure.core/println ">" :fert-rate-without-45-49) (clojure.core/assoc bundle :fert-rate-without-45-49 true))
+(clojure.core/defn historic-fertility [bundle] (clojure.core/println ">" :historic-fertility) (clojure.core/assoc bundle :historic-fertility true))
+(clojure.core/defn fert-rate-with-45-49 [bundle] (clojure.core/println ">" :fert-rate-with-45-49) (clojure.core/assoc bundle :fert-rate-with-45-49 true))
+(clojure.core/defn estimated-sya-births [bundle] (clojure.core/println ">" :estimated-sya-births) (clojure.core/assoc bundle :estimated-sya-births true))
+(clojure.core/defn scaling-factors [bundle] (clojure.core/println ">" :scaling-factors) (clojure.core/assoc bundle :scaling-factors true))
+(clojure.core/defn out [bundle] (clojure.core/println ">" :out) (clojure.core/assoc bundle :out true))
+(clojure.core/defn actual-births [bundle] (clojure.core/println ">" :actual-births) (clojure.core/assoc bundle :actual-births true))
+(clojure.core/defn at-risk-last-birth-year [bundle] (clojure.core/println ">" :at-risk-last-birth-year) (clojure.core/assoc bundle :at-risk-last-birth-year true))
+(clojure.core/defn estimated-births [bundle] (clojure.core/println ">" :estimated-births) (clojure.core/assoc bundle :estimated-births true))
+(clojure.core/defn at-risk-last-fert-last-year [bundle] (clojure.core/println ">" :at-risk-last-fert-last-year) (clojure.core/assoc bundle :at-risk-last-fert-last-year true))
+(clojure.core/defn in [bundle] (clojure.core/println ">" :in) (clojure.core/assoc bundle :in true))
+(clojure.core/defn at-risk-this-birth-year [bundle] (clojure.core/println ">" :at-risk-this-birth-year) (clojure.core/assoc bundle :at-risk-this-birth-year true))
 
 (comment "Smash the set of the function names through create-function to get default function defs")
 

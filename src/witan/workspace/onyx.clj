@@ -210,8 +210,7 @@
                        (vec)
                        (not-empty)))
    ;;;;;;;
-   :witan/params (fn [cat _]
-                   (when (contains? cat :witan/params) (:witan/params cat)))
+   :witan/params (fn [cat _] (:witan/params cat))
    :witan/fn (fn [cat config]
                (when (contains? config :fn-wrapper)
                  (:witan/fn cat)))})

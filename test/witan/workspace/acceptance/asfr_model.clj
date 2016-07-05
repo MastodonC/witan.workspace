@@ -41,7 +41,7 @@
                      [:scaling-factors :historic-fertility]
                      [:historic-fertility :out]])
 
-(def all-functions (set witan-workflow))
+(def all-functions (-> witan-workflow flatten set))
 
 (defn create-function
   [kw]
@@ -135,12 +135,14 @@
    :at-risk-this-birth-year true})
 
 (deftest crazy-workflow-works
-  (let [state {}]
-    (is (= result
-           (run-job
-            (add-source-and-sink
-             (o/workspace->onyx-job
-              {:workflow witan-workflow
-               :catalog catalog}
-              config))
-            state)))))
+  (let [state {}
+        onyx-result (run-job
+                     (add-source-and-sink
+                      (o/workspace->onyx-job
+                       {:workflow witan-workflow
+                        :catalog catalog}
+                       config))
+                     state)
+        diff (clojure.set/difference (-> result keys set) (-> onyx-result keys set))
+        _ (when (not-empty diff) (println ">>> DIFF" diff))]
+    (is (= result onyx-result))))

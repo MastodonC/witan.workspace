@@ -1,4 +1,5 @@
-(ns witan.workspace.acceptance.config)
+(ns witan.workspace.acceptance.config
+  (:require [witan.workspace-api.onyx :refer [default-fn-wrapper default-pred-wrapper]]))
 
 (def config
   {:env-config {:onyx/tenancy-id "testcluster"

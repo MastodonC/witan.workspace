@@ -30,4 +30,8 @@
                    :dependencies [[org.clojure/tools.namespace "0.2.4"]
                                   [ring/ring-mock "0.3.0"]
                                   [witan.workspace-api "0.1.6"]]
-                   :repl-options {:init-ns user}}})
+                   :repl-options {:init-ns user}}}
+  :repositories [["releases" {:url "https://clojars.org/repo"
+                              :creds :gpg}]
+                 ["snapshots" {:url "https://clojars.org/repo"
+                               :creds :gpg}]])

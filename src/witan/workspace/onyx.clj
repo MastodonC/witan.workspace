@@ -206,7 +206,7 @@
                   (->> (conj []
                              (when (contains? config :fn-wrapper) :witan/fn)
                              (when (contains? cat :witan/params) :witan/params))
-                       (remove nil?)
+                       (keep identity)
                        (vec)
                        (not-empty)))
    ;;;;;;;

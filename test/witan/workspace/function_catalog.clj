@@ -17,8 +17,17 @@
    :witan/version "1.0"
    :witan/input-schema {:number s/Num}
    :witan/output-schema {:number s/Num}}
-  [{:keys [number]} _]
+  [{:keys [number] :as x} _]
   {:number (inc number)})
+
+(defworkflowfn inc*
+  "increments a number"
+  {:witan/name :witan.test-funcs/inc*
+   :witan/version "1.0"
+   :witan/input-schema {:number s/Num}
+   :witan/output-schema {:foo s/Num}}
+  [{:keys [number]} _]
+  {:foo (inc number)})
 
 (defworkflowfn mul2
   "multiplies a number by 2"
@@ -55,18 +64,18 @@
    :witan/input-schema {:number s/Num
                         :to-add s/Num}
    :witan/output-schema {:number s/Num}}
-  [{:keys [number to-add]}]
+  [{:keys [number to-add]} _]
   {:number (+ number to-add)})
 
 (defworkflowfn add*
   "Adds number and to-add"
   {:witan/name :witan.test-funcs/add
    :witan/version "1.0"
-   :witan/input-schema {:number s/Num
+   :witan/input-schema {:foo s/Num
                         :mult s/Num}
    :witan/output-schema {:number s/Num}}
-  [{:keys [number mult]}]
-  {:number (+ number mult)})
+  [{:keys [foo mult]} _]
+  {:number (+ foo mult)})
 
 (defworkflowfn ->str
   "Converts thing to string"
@@ -74,7 +83,7 @@
    :witan/version "1.0"
    :witan/input-schema {:thing s/Any}
    :witan/output-schema {:out-str s/Any}}
-  [{:keys [thing]}]
+  [{:keys [thing]} _]
   {:out-str (str thing)})
 
 (defn source-data

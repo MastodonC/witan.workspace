@@ -47,7 +47,14 @@
                                 [:inc [:enough? :out :inc]]]
                      :catalog []
                      :task-scheduler :onyx.task-scheduler/balanced}
-                    config)]
+                    config)
+          onyx-job-pred-wraps (o/witan-workflow->onyx-workflow
+                               {:workflow [[:in :inc]
+                                           [:inc [:enough? :out :inc]]]
+                                :catalog []
+                                :task-scheduler :onyx.task-scheduler/balanced}
+                               (assoc config
+                                      :pred-wrapper :witan.workspace.function-catalog/test-pred-wrapper))]
       (is (= [[:in :write-state-inc]
               [:inc :write-state-inc]
               [:read-state-inc :inc]
@@ -57,9 +64,18 @@
                :flow/to [:write-state-inc],
                :flow/predicate [:not :enough?]}
               {:flow/from :inc,
-               :flow/to [:out], :flow/predicate
-               [:enough?]}]
+               :flow/to [:out],
+               :flow/predicate :enough?}]
              (:flow-conditions onyx-job)))
+      (is (= [{:flow/from :inc,
+               :flow/to [:write-state-inc],
+               :flow/predicate [:not [:witan.workspace.function-catalog/test-pred-wrapper :witan/fn]]
+               :witan/fn :enough?}
+              {:flow/from :inc,
+               :flow/to [:out],
+               :flow/predicate [:witan.workspace.function-catalog/test-pred-wrapper :witan/fn]
+               :witan/fn :enough?}]
+             (:flow-conditions onyx-job-pred-wraps)))
       (is (= [{:onyx/name :write-state-inc,
                :onyx/plugin :onyx.plugin.redis/writer,
                :onyx/type :output,

@@ -16,7 +16,22 @@
              [core-async :as core-async]
              [redis :as redis]]
             [taoensso.carmine :as car :refer [wcar]]
-            [witan.workspace.acceptance.config :refer [config]]))
+            [witan.workspace.acceptance.config :refer [config]]
+            [witan.workspace-api.onyx :refer [default-fn-wrapper
+                                              default-pred-wrapper
+                                              kw->fn]]))
+
+#_(defn test-fn-wrapper
+    ([fn segment]
+     ((kw->fn fn) segment))
+    ([fn params segment]
+     ((kw->fn fn) segment params)))
+
+#_(defn test-pred-wrapper
+    ([_ _ segment _ fn]
+     ((kw->fn fn) segment))
+    ([_ _ segment _ fn params]
+     ((kw->fn fn) segment params)))
 
 (defn redis-conn []
   {:spec {:uri (get-in config [:redis-config :redis/uri])}})
@@ -70,41 +85,42 @@
              (run-job onyx-job state))))))
 
 (deftest looping-workspace-executed-on-onyx
-  (let [state {:test "blah" :number 0}]
+  (let [state {:test "blah" :number 0}
+        onyx-job (add-source-and-sink
+                  (o/workspace->onyx-job
+                   {:workflow [[:in :inc]
+                               [:inc [:witan.workspace.function-catalog/gte-ten :out :inc]]]
+                    :catalog [{:witan/name :inc
+                               :witan/fn :witan.workspace.function-catalog/my-inc}]}
+                   config))]
     (is (= (nth (iterate fc/my-inc state) 10)
            (run-job
-            (add-source-and-sink
-             (o/workspace->onyx-job
-              {:workflow [[:in :inc]
-                          [:inc [:witan.workspace.function-catalog/gte-ten :out :inc]]]
-               :catalog [{:witan/name :inc
-                          :witan/fn :witan.workspace.function-catalog/my-inc}]}
-              config))
+            onyx-job
             state)))))
 
 (deftest merge-workspace-executed-on-onyx
-  (let [state {:test "blah" :number 0}]
-    (is (= (fc/add* (merge (fc/mul2* state) (fc/my-inc state)))
-           (run-job
-            (add-source-and-sink
-             (o/workspace->onyx-job
-              {:workflow [[:in :inc]
-                          [:in :mult]
-                          [:inc :sum]
-                          [:mult :sum]
-                          [:sum :out]]
-               :catalog [{:witan/name :inc
-                          :witan/fn :witan.workspace.function-catalog/my-inc}
-                         {:witan/name :mult
-                          :witan/fn :witan.workspace.function-catalog/mul2*}
-                         {:witan/name :sum
-                          :witan/fn :witan.workspace.function-catalog/add*}]
-               :task-scheduler :onyx.task-scheduler/balanced}
-              config))
-            state)))))
+  (let [state {:test "blah" :number 1}
+        result (fc/add* (merge (fc/mul2* state) (fc/inc* state)))
+        onyx-job (add-source-and-sink
+                  (o/workspace->onyx-job
+                   {:workflow [[:in :inc]
+                               [:in :mult]
+                               [:inc :sum]
+                               [:mult :sum]
+                               [:sum :out]]
+                    :catalog [{:witan/name :inc
+                               :witan/fn :witan.workspace.function-catalog/inc*}
+                              {:witan/name :mult
+                               :witan/fn :witan.workspace.function-catalog/mul2*}
+                              {:witan/name :sum
+                               :witan/fn :witan.workspace.function-catalog/add*}]
+                    :task-scheduler :onyx.task-scheduler/balanced}
+                   config))]
+    (is (= result
+           (run-job onyx-job state)))))
 
 
-(comment [:get-births-data-year :at-risk-this-birth-year
+(comment [:get-births-data-year :at-risk-this-birth-yearu
           :get-births-data-year :at-risk-last-birth-year
           :at-risk-this-birth-year :births-pool
           :at-risk-last-birth-year :births-pool

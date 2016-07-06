@@ -1,4 +1,4 @@
-(defproject witan.workspace "0.1.0"
+(defproject witan.workspace "0.1.1-SNAPSHOT"
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/core.async "0.2.385"]

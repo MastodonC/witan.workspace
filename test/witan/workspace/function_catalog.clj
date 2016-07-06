@@ -9,7 +9,7 @@
    :witan/version "1.0"
    :witan/input-schema {:number s/Num}}
   [{:keys [number] :as msg} _]
-  (<= 10 number))
+  (>= number 10))
 
 (defworkflowfn my-inc
   "increments a number"
@@ -85,6 +85,18 @@
    :witan/output-schema {:out-str s/Any}}
   [{:keys [thing]} _]
   {:out-str (str thing)})
+
+(defworkflowfn dupe
+  "This is a test function which will duplicate a key
+  into another key"
+  {:witan/name :_
+   :witan/version "1.0"
+   :witan/input-schema {:* s/Any}
+   :witan/param-schema {:from s/Keyword
+                        :to s/Keyword}
+   :witan/output-schema {:* s/Any}}
+  [m {:keys [from to]}]
+  (hash-map to (get m from)))
 
 (defn source-data
   []

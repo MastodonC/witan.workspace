@@ -31,18 +31,20 @@
       (add-task (core-async/output :out (:batch-settings config)))))
 
 (defn run-job
-  [job data]
-  (let [{:keys [env-config
-                peer-config]} config
-        redis-spec (redis-conn)
-        {:keys [out in]} (get-core-async-channels job)]
-    (with-test-env [test-env [7 env-config peer-config]]
-      (pipe (spool [data :done]) in)
-      (onyx.test-helper/validate-enough-peers! test-env job)
-      (let [job-id (:job-id (onyx.api/submit-job peer-config job))
-            result (<!! out)]
-        (onyx.api/await-job-completion peer-config job-id)
-        result))))
+  ([job data]
+   (run-job job data 7))
+  ([job data n]
+   (let [{:keys [env-config
+                 peer-config]} config
+         redis-spec (redis-conn)
+         {:keys [out in]} (get-core-async-channels job)]
+     (with-test-env [test-env [n env-config peer-config]]
+       (pipe (spool [data :done]) in)
+       (onyx.test-helper/validate-enough-peers! test-env job)
+       (let [job-id (:job-id (onyx.api/submit-job peer-config job))
+             result (<!! out)]
+         (onyx.api/await-job-completion peer-config job-id)
+         result)))))
 
 (deftest linear-workspace-executed-on-onyx
   (testing "Linear workspace with no params"
@@ -73,18 +75,102 @@
              (run-job onyx-job state))))))
 
 (deftest looping-workspace-executed-on-onyx
-  (let [state {:test "blah" :number 0}
+  (testing "loop to same"
+    (let [state {:test "blah" :number 0}
+          onyx-job (add-source-and-sink
+                    (o/workspace->onyx-job
+                     {:workflow [[:in :inc]
+                                 [:inc [:enough? :out :inc]]]
+                      :catalog [{:witan/name :inc
+                                 :witan/fn :witan.workspace.function-catalog/my-inc}
+                                {:witan/name :enough?
+                                 :witan/fn :witan.workspace.function-catalog/gte-ten}]}
+                     config))]
+      (is (= (nth (iterate fc/my-inc state) 10)
+             (run-job
+              onyx-job
+              state)))))
+  (testing "loop to diff"
+    (let [state {:test "blah" :number 0}
+          onyx-job (add-source-and-sink
+                    (o/workspace->onyx-job
+                     {:workflow [[:in :inc]
+                                 [:inc :mul2]
+                                 [:mul2 [:loop? :out :inc]]]
+                      :catalog [{:witan/name :inc
+                                 :witan/fn :witan.workspace.function-catalog/my-inc}
+                                {:witan/name :mul2
+                                 :witan/fn :witan.workspace.function-catalog/mul2}
+                                {:witan/name :loop?
+                                 :witan/fn :witan.workspace.function-catalog/gte-ten}]}
+                     config))]
+      (is (= (first (drop-while (comp not fc/gte-ten)
+                                (iterate (comp fc/mul2 fc/my-inc) state)))
+             (run-job
+              onyx-job
+              state))))))
+
+(deftest looping-workspace-executed-on-onyx-WITHOUT-pred-in-catalog
+  (is (thrown-with-msg? Exception #"task->fn could not find task '\:loop\?' in the catalog."
+                        (add-source-and-sink
+                         (o/workspace->onyx-job
+                          {:workflow [[:in :inc]
+                                      [:inc [:loop? :out :inc]]]
+                           :catalog [{:witan/name :inc
+                                      :witan/fn :witan.workspace.function-catalog/my-inc}]}
+                          config)))))
+
+;; Execute before task
+(defn log-before-batch
+  [event lifecycle]
+  (println "Executing before batch" (:lifecycle/task lifecycle))
+  {})
+
+(def log-calls
+  {:lifecycle/before-batch log-before-batch})
+
+(deftest loop+merge-workspace-executed-on-onyx
+  (let [state {:test "blah" :number 2}
         onyx-job (add-source-and-sink
                   (o/workspace->onyx-job
-                   {:workflow [[:in :inc]
-                               [:inc [:witan.workspace.function-catalog/gte-ten :out :inc]]]
+                   {:workflow [[:in   :inc]
+                               [:in   :mul2]
+                               [:inc  :dupe]
+                               [:dupe [:enough? :mulX :inc]]
+                               [:mul2 :dupe2]
+                               [:dupe2 :merge]
+                               [:mulX :merge]
+                               [:merge :out]]
                     :catalog [{:witan/name :inc
-                               :witan/fn :witan.workspace.function-catalog/my-inc}]}
-                   config))]
-    (is (= (nth (iterate fc/my-inc state) 10)
-           (run-job
-            onyx-job
-            state)))))
+                               :witan/fn :witan.workspace.function-catalog/my-inc}
+                              {:witan/name :mul2
+                               :witan/fn :witan.workspace.function-catalog/mul2}
+                              {:witan/name :dupe
+                               :witan/fn :witan.workspace.function-catalog/dupe
+                               :witan/params {:from :number
+                                              :to :foo}}
+                              {:witan/name :dupe2
+                               :witan/fn :witan.workspace.function-catalog/dupe
+                               :witan/params {:from :number
+                                              :to :foo2}}
+                              {:witan/name :mulX
+                               :witan/fn :witan.workspace.function-catalog/mulX
+                               :witan/params {:x 4}}
+                              {:witan/name :merge
+                               :witan/fn :clojure.core/identity}
+                              {:witan/name :enough?
+                               :witan/fn :witan.workspace.function-catalog/gte-ten}]}
+                   config))
+        onyx-job' onyx-job
+        #_(update onyx-job :lifecycles concat [{:lifecycle/task :inc
+                                                :lifecycle/calls :witan.workspace.acceptance.onyx-test/log-calls}
+                                               {:lifecycle/task :dupe
+                                                :lifecycle/calls :witan.workspace.acceptance.onyx-test/log-calls}
+                                               {:lifecycle/task :mulX
+                                                :lifecycle/calls :witan.workspace.acceptance.onyx-test/log-calls}])
+        result (run-job onyx-job' state 13)
+        prediction {:test "blah", :number 40, :foo2 4, :foo 10}]
+    (is (= result prediction))))
 
 (deftest merge-workspace-executed-on-onyx
   (let [state {:test "blah" :number 1}

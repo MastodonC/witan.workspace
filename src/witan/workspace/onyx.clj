@@ -79,6 +79,12 @@
            :flow/predicate pred}
           params)])
 
+(defn task->fn
+  [cat task]
+  (if-let [fn (some #(when (= task (:onyx/name %)) (or (:witan/fn %) (:onyx/fn %))) cat)]
+    fn
+    (throw (Exception. (str "task->fn could not find task '" task "' in the catalog.")))))
+
 (defn branch-expanders
   [config]
   (let [redis-uri (:redis/uri (:redis-config config))
@@ -91,7 +97,7 @@
             redis-key (redis-key-for branch)
             loop-node [(first branch) write-state]
             exit-node [(first branch) (ssecond branch)]
-            pred-params (when pred-wrapper {:witan/fn (flast branch)})
+            pred-params #(when pred-wrapper {:witan/fn (task->fn % (flast branch))})
             branch-fn (if pred-wrapper
                         [pred-wrapper :witan/fn]
                         (flast branch))]
@@ -115,13 +121,13 @@
                 (flow-condition
                  loop-node
                  [:not branch-fn]
-                 pred-params))
+                 (pred-params (:catalog raw))))
                (setval
                 fc-end
                 (flow-condition
                  exit-node
                  branch-fn
-                 pred-params))
+                 (pred-params (:catalog raw))))
                (add-task (redis-tasks/writer write-state redis-uri :redis/set redis-key batch-settings))
                (add-task (redis-tasks/reader read-state redis-uri redis-key batch-settings))))))))
 
@@ -165,7 +171,7 @@
   {:task-scheduler :onyx.task-scheduler/balanced})
 
 (defn branch-expander
-  [config workspace]
+  [workspace config]
   ((->>
     (select [:workflow ALL branch?] workspace)
     (map (branch-expanders config))
@@ -173,7 +179,7 @@
    workspace))
 
 (defn merge-expander
-  [config workspace]
+  [workspace config]
   ((->>
     (:workflow workspace)
     (remove branch?)
@@ -184,14 +190,48 @@
     (apply comp identity))
    workspace))
 
+(def special-branch-key-id "_pred_refit_")
+
+(defn identify-branches
+  "Pick out branches and create a map which associates them with keys"
+  [workflow]
+  (into {} (map-indexed (fn [i [a pred]]
+                          (hash-map pred (->> i
+                                              (str special-branch-key-id)
+                                              (keyword))))
+                        (select [ALL branch?] workflow))))
+
+(defn switch-out-branches
+  "Using a branch map, replace instances of branch with the associated keyword"
+  [branches]
+  (fn [workflow]
+    (reduce (fn [a [from to]]
+              (if-let [new (get branches to)]
+                (conj a [from new])
+                (conj a [from to]))) [] workflow)))
+
+(defn switch-in-branches
+  "Using a branch map, replace instances of keyword with the associated branch"
+  [branches]
+  (fn [workflow]
+    (reduce (fn [a [from to]]
+              (if-let [special (re-find (re-pattern (str "^" special-branch-key-id "\\d+")) (name to))]
+                (let [branch (some (fn [kv]
+                                     (when (= (second kv)
+                                              (keyword special)) (first kv))) branches)]
+                  (conj a [from branch]))
+                (conj a [from to]))) [] workflow)))
+
 (defn witan-workflow->onyx-workflow
   [{:keys [workflow] :as workspace} config]
-  (->>
-   (assoc workspace
-          :flow-conditions []
-          :lifecycles [])
-   (merge-expander config)
-   (branch-expander config)))
+  (let [branches (identify-branches workflow)]
+    (-> workspace
+        (assoc :flow-conditions []
+               :lifecycles [])
+        (update :workflow (switch-out-branches branches))
+        (merge-expander config)
+        (update :workflow (switch-in-branches branches))
+        (branch-expander config))))
 
 (def onyx-catalog-entry-template
   {:onyx/name :witan/name
@@ -220,26 +260,31 @@
                  (:witan/fn cat)))})
 
 (defn witan-catalog->onyx-catalog
-  [{:keys [catalog] :as workspace}
-   config]
-  (update workspace
-          :catalog
-          #(mapv (fn [cat]
-                   (reduce-kv
-                    (fn [acc onyx-key getter]
-                      (if-let [r (getter cat config)]
-                        (assoc acc onyx-key r)
-                        acc))
-                    {}
-                    onyx-catalog-entry-template))
-                 %)))
+  [{:keys [catalog workflow] :as workspace} config]
+  (let [branches (set (select [ALL branch? LAST FIRST] workflow))]
+    (update workspace
+            :catalog
+            #(mapv (fn [cat]
+                     (let [r (reduce-kv
+                              (fn [acc onyx-key getter]
+                                (if-let [r (getter cat config)]
+                                  (assoc acc onyx-key r)
+                                  acc))
+                              {}
+                              onyx-catalog-entry-template)]
+                       (if (contains? branches (:witan/name cat))
+                         (assoc r :witan/pred? true)
+                         r)))
+                   %))))
 
 (s/defn workspace->onyx-job
+  "Converts a Witan workspace into an Onyx job."
   [{:keys [workflow] :as workspace} :- as/Workspace
    config]
   (->
-   (merge workspace
-          onyx-defaults)
+   (merge workspace onyx-defaults)
    (dissoc :contracts)
    (witan-catalog->onyx-catalog config)
-   (witan-workflow->onyx-workflow config)))
+   (witan-workflow->onyx-workflow config)
+   ;; removes any predicates from the catalog
+   (update :catalog #(remove :witan/pred? %))))

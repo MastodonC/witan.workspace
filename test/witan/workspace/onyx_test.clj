@@ -8,11 +8,10 @@
 
 (defn workspace
   [{:keys [workflow contracts catalog] :as raw}]
-  (->
-   raw
-   (assoc :workflow (or workflow []))
-   (assoc :contracts (or contracts []))
-   (assoc :catalog (or catalog []))))
+  (assoc raw
+         :workflow (or workflow [])
+         :contracts (or contracts [])
+         :catalog (or catalog [])))
 
 (def config
   {:redis-config {:redis/uri "redis"}
@@ -42,17 +41,19 @@
             {}))))
 
   (testing "Loops should be introduced when branches are used"
-    (let [onyx-job (o/witan-workflow->onyx-workflow
-                    {:workflow [[:in :inc]
-                                [:inc [:enough? :out :inc]]]
-                     :catalog []
-                     :task-scheduler :onyx.task-scheduler/balanced}
+    (let [onyx-job (o/workspace->onyx-job
+                    (workspace
+                     {:workflow [[:in :inc]
+                                 [:inc [:enough? :out :inc]]]})
                     config)
-          onyx-job-pred-wraps (o/witan-workflow->onyx-workflow
-                               {:workflow [[:in :inc]
-                                           [:inc [:enough? :out :inc]]]
-                                :catalog []
-                                :task-scheduler :onyx.task-scheduler/balanced}
+          onyx-job-pred-wraps (o/workspace->onyx-job
+                               (workspace
+                                {:workflow [[:in :inc]
+                                            [:inc [:enough? :out :inc]]]
+                                 :catalog [{:witan/name :enough?
+                                            :witan/fn :witan.workspace.function-catalog/enough?
+                                            :witan/version "1.0"
+                                            :witan/inputs [{:witan/input-src-key :foo}]}]})
                                (assoc config
                                       :pred-wrapper :witan.workspace.function-catalog/test-pred-wrapper))]
       (is (= [[:in :write-state-inc]
@@ -70,11 +71,11 @@
       (is (= [{:flow/from :inc,
                :flow/to [:write-state-inc],
                :flow/predicate [:not [:witan.workspace.function-catalog/test-pred-wrapper :witan/fn]]
-               :witan/fn :enough?}
+               :witan/fn :witan.workspace.function-catalog/enough?}
               {:flow/from :inc,
                :flow/to [:out],
                :flow/predicate [:witan.workspace.function-catalog/test-pred-wrapper :witan/fn]
-               :witan/fn :enough?}]
+               :witan/fn :witan.workspace.function-catalog/enough?}]
              (:flow-conditions onyx-job-pred-wraps)))
       (is (= [{:onyx/name :write-state-inc,
                :onyx/plugin :onyx.plugin.redis/writer,
@@ -114,6 +115,113 @@
               [:mult :write-merge-inc-mult-for-sum]
               [:sum :out]
               [:read-merge-inc-mult-for-sum :sum]]
+             (:workflow onyx-job)))
+      (is (= [{:onyx/name :write-merge-inc-mult-for-sum
+               :onyx/plugin :onyx.plugin.redis/writer
+               :onyx/type :output
+               :onyx/medium :redis
+               :redis/cmd :redis/rpush
+               :redis/uri (get-in config [:redis-config :redis/uri])
+               :onyx/batch-size 1}
+              {:onyx/plugin :onyx.plugin.redis/reader
+               :onyx/medium :redis
+               :onyx/type :input
+               :onyx/name :read-merge-inc-mult-for-sum
+               :onyx/max-peers 1
+               :redis/length 2
+               :redis/uri (get-in config [:redis-config :redis/uri])
+               :redis/cmd :redis/lrange
+               :onyx/batch-size 1}]
+             (mapv #(dissoc % :redis/key) (:catalog onyx-job))))))
+
+  (testing "merge within a loop"
+    (let [onyx-job (o/witan-workflow->onyx-workflow
+                    {:workflow [[:in :x]
+                                [:in :y]
+                                [:x  :z]
+                                [:y  :foo]
+                                [:z  :foo]
+                                [:foo [:loop? :x :a]]]
+                     :catalog []
+                     :task-scheduler :onyx.task-scheduler/balanced}
+                    config)]
+      (is (= [[:in :x]
+              [:in :y]
+              [:x :z]
+              [:y :write-merge-y-z-for-foo]
+              [:z :write-merge-y-z-for-foo]
+              [:foo :write-state-foo]
+              [:read-merge-y-z-for-foo :foo]
+              [:read-state-foo :a]
+              [:foo :x]]
+             (:workflow onyx-job)))))
+  (testing "branch, loop, merge"
+    (let [onyx-job (o/witan-workflow->onyx-workflow
+                    {:workflow [[:in :a]
+                                [:a  :b]
+                                [:a  :c]
+                                [:c  :d]
+                                [:d [:loop? :c :f]]
+                                [:f  :g]
+                                [:b  :g]]
+                     :catalog []
+                     :task-scheduler :onyx.task-scheduler/balanced}
+                    config)]
+      (= [[:in :a]
+          [:a :b]
+          [:a :c]
+          [:c :d]
+          [:d :write-state-d]
+          [:f :write-merge-f-b-for-g]
+          [:b :write-merge-f-b-for-g]
+          [:read-merge-f-b-for-g :g]
+          [:read-state-d :f]
+          [:d :c]]
+         (:workflow onyx-job))))
+  (testing "just loop then merge"
+    (let [onyx-job (o/witan-workflow->onyx-workflow
+                    {:workflow [[:in1 :a]
+                                [:in2 :c]
+                                [:a   :b]
+                                [:b   [:loop? :a :d]]
+                                [:d   :e]
+                                [:c   :e]]
+                     :catalog []
+                     :task-scheduler :onyx.task-scheduler/balanced}
+                    config)]
+      (is (= [[:in1 :a]
+              [:in2 :c]
+              [:a :b]
+              [:b :write-state-b]
+              [:d :write-merge-d-c-for-e]
+              [:c :write-merge-d-c-for-e]
+              [:read-merge-d-c-for-e :e]
+              [:read-state-b :d]
+              [:b :a]]
+             (:workflow onyx-job)))))
+
+  (testing "merge then loop"
+    (let [onyx-job (o/witan-workflow->onyx-workflow
+                    {:workflow [[:in1 :a]
+                                [:in2 :c]
+                                [:a   :b]
+                                [:c   :b]
+                                [:b   :d]
+                                [:d   [:loop? :b :e]]
+                                [:e   :f]]
+                     :catalog []
+                     :task-scheduler :onyx.task-scheduler/balanced}
+                    config)]
+      (is (= [[:in1 :a]
+              [:in2 :c]
+              [:a :write-merge-a-c-for-b]
+              [:c :write-merge-a-c-for-b]
+              [:b :d]
+              [:d :write-state-d]
+              [:e :f]
+              [:read-merge-a-c-for-b :b]
+              [:read-state-d :e]
+              [:d :b]]
              (:workflow onyx-job))))))
 
 (deftest witan-catalog->onyx-catalog
@@ -161,7 +269,7 @@
 (deftest witan-workspace->onyx-job
   (is (= {:workflow [[:in :inc]
                      [:inc :out]]
-                                        ;   :contracts []
+          ;;:contracts []
           :catalog [{:onyx/name :inc
                      :onyx/fn   :witan.workspace.function-catalog/my-inc
                      :onyx/type :function

@@ -278,6 +278,7 @@
                    %))))
 
 (s/defn workspace->onyx-job
+  "Converts a Witan workspace into an Onyx job."
   [{:keys [workflow] :as workspace} :- as/Workspace
    config]
   (->
@@ -285,4 +286,5 @@
    (dissoc :contracts)
    (witan-catalog->onyx-catalog config)
    (witan-workflow->onyx-workflow config)
+   ;; removes any predicates from the catalog
    (update :catalog #(remove :witan/pred? %))))

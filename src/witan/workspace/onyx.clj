@@ -190,12 +190,14 @@
     (apply comp identity))
    workspace))
 
+(def special-branch-key-id "_pred_refit_")
+
 (defn identify-branches
   "Pick out branches and create a map which associates them with keys"
   [workflow]
   (into {} (map-indexed (fn [i [a pred]]
                           (hash-map pred (->> i
-                                              (str "_pred_refit_")
+                                              (str special-branch-key-id)
                                               (keyword))))
                         (select [ALL branch?] workflow))))
 
@@ -213,7 +215,7 @@
   [preds]
   (fn [workflow]
     (reduce (fn [a [from to]]
-              (if-let [special (re-find #"^_pred_refit_\d+" (name to))]
+              (if-let [special (re-find (re-pattern (str "^" special-branch-key-id "\\d+")) (name to))]
                 (let [branch (some (fn [kv]
                                      (when (= (second kv)
                                               (keyword special)) (first kv))) preds)]

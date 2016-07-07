@@ -203,34 +203,34 @@
 
 (defn switch-out-branches
   "Using a branch map, replace instances of branch with the associated keyword"
-  [preds]
+  [branches]
   (fn [workflow]
     (reduce (fn [a [from to]]
-              (if-let [new (get preds to)]
+              (if-let [new (get branches to)]
                 (conj a [from new])
                 (conj a [from to]))) [] workflow)))
 
 (defn switch-in-branches
   "Using a branch map, replace instances of keyword with the associated branch"
-  [preds]
+  [branches]
   (fn [workflow]
     (reduce (fn [a [from to]]
               (if-let [special (re-find (re-pattern (str "^" special-branch-key-id "\\d+")) (name to))]
                 (let [branch (some (fn [kv]
                                      (when (= (second kv)
-                                              (keyword special)) (first kv))) preds)]
+                                              (keyword special)) (first kv))) branches)]
                   (conj a [from branch]))
                 (conj a [from to]))) [] workflow)))
 
 (defn witan-workflow->onyx-workflow
   [{:keys [workflow] :as workspace} config]
-  (let [preds (identify-branches workflow)]
+  (let [branches (identify-branches workflow)]
     (-> workspace
         (assoc :flow-conditions []
                :lifecycles [])
-        (update :workflow (switch-out-branches preds))
+        (update :workflow (switch-out-branches branches))
         (merge-expander config)
-        (update :workflow (switch-in-branches preds))
+        (update :workflow (switch-in-branches branches))
         (branch-expander config))))
 
 (def onyx-catalog-entry-template

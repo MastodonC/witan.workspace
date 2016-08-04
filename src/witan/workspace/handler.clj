@@ -18,23 +18,6 @@
      x)
     (ByteArrayInputStream. (.toByteArray out))))
 
-#_(defn ws-handler [request]
-    (let [components (:witan.gateway.components.server/components request)]
-      (with-channel request channel
-        (connect! channel)
-        (on-close channel (partial disconnect! channel))
-        (on-receive channel #(try
-                               (let [msg (read-string %)
-                                     error (rs/check-message "1.0" msg)]
-                                 (if-not error
-                                   (handle-message channel msg components)
-                                   (send-edn! channel {:error error :original msg})))
-                               (catch Exception e
-                                 (println "Exception thrown:" e)
-                                 (send-edn! channel {:error (str e) :original %})))))))
-
-
-
 (defn handle-query
   [encoded-query components]
   (let [decoded-query (-> encoded-query
@@ -50,7 +33,6 @@
                           :body (.getMessage e)}))))
 
 (defroutes app
-  ;;(GET "/ws" req (ws-handler req))
   (GET "/query/:encoded-query"
        {{encoded-query :encoded-query} :params
         components :witan.gateway.components.server/components}

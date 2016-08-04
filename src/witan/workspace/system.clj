@@ -3,12 +3,12 @@
             [taoensso.timbre                   :as timbre]
             [aero.core                         :refer [read-config]]
             [witan.workspace.logstash-appender :as logstash]
+            [witan.workspace.protocols         :as p]
             ;;
             [witan.workspace.components.kafka     :refer [new-kafka-consumer
                                                           new-kafka-producer]]
             [witan.workspace.components.cassandra :refer [new-cassandra-connection]]
             [witan.workspace.components.server    :refer [new-http-server]]
-            [witan.workspace.components.peer      :refer [new-peer-handler]]
             [witan.workspace.command              :refer [command-receiver]]
             [witan.workspace.event                :refer [event-receiver]])
   (:gen-class))
@@ -25,9 +25,8 @@
      ;; create system
      (component/system-map
       :db                      (new-cassandra-connection (:cassandra config) profile)
-      :peer                    (new-peer-handler (:peer config))
       :server                  (component/using
-                                (new-http-server (:webserver config)) [:db :peer])
+                                (new-http-server (:webserver config)) [:db])
       :kafka-producer          (new-kafka-producer (-> config :kafka :zk))
 
       :kafka-consumer-commands (component/using

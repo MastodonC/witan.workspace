@@ -1,54 +1,39 @@
 (ns witan.workspace.handler
-  (:require [compojure.api.sweet             :refer :all]
-            [ring.util.http-response         :refer :all]
-            [taoensso.timbre                 :as log]
-            [schema.core                     :as s]
-            [witan.workspace.workspace       :as w]
-            [witan.workspace.components.peer :as p]))
+  (:require [compojure.core            :refer :all]
+            [taoensso.timbre           :as log]
+            [schema.core               :as s]
+            [cognitect.transit         :as tr]
+            [outpace.schema-transit    :as st]
+            [clojure.data.codec.base64 :as b64]
+            [witan.workspace.query     :as q])
+  (:import [java.io ByteArrayInputStream ByteArrayOutputStream]))
 
-(defn params-vector ;; this probably should be middleare
-  [req k]
-  (let [x (-> req :params k)]
-    (if-not (map? x) nil
-            (vec (vals x)))))
+(defn transitize
+  [x]
+  (let [out (ByteArrayOutputStream. 4096)]
+    (tr/write
+     (tr/writer out
+                :json-verbose
+                {:handlers st/cross-platform-write-handlers})
+     x)
+    (ByteArrayInputStream. (.toByteArray out))))
 
-(def app
-  (api
-   {:swagger
-    {:ui "/"
-     :spec "/swagger.json"
-     :data {:info {:title "Witan Workspace Query service"
-                   :description ""}
-            :tags [{:name "api", :description "some apis"}]}}}
+(defn handle-query
+  [encoded-query components]
+  (let [decoded-query (-> encoded-query
+                          (.getBytes "utf-8")
+                          (b64/decode)
+                          (String.)
+                          (read-string))
+        _ (log/debug "Got query:" decoded-query)]
+    (try
+      {:status 200
+       :body (transitize (q/query decoded-query (:db components)))}
+      (catch Exception e {:status 500
+                          :body (.getMessage e)}))))
 
-   (GET "/by-owner" req
-     :summary "Queries the workspaces by owner"
-     :components [db]
-     :query-params [owner :- s/Uuid]
-     (do
-       (log/debug req)
-       (w/by-owner owner (params-vector req :fields) db)))
-
-   (GET "/by-id" req
-     :summary "Queries the workspaces by id"
-     :components [db]
-     :query-params [id :- s/Uuid]
-     (w/by-id id (params-vector req :fields) db))
-
-   (GET "/functions" req
-     :summary "Returns a list of functions available"
-     :components [peer]
-     :query-params []
-     (p/functions peer))
-
-   (GET "/models" req
-     :summary "Returns a list of models available"
-     :components [peer]
-     :query-params []
-     (p/models peer))
-
-   (GET "/predicates" req
-     :summary "Returns a list of predicates available"
-     :components [peer]
-     :query-params []
-     (p/predicates peer))))
+(defroutes app
+  (GET "/query/:encoded-query"
+       {{encoded-query :encoded-query} :params
+        components :witan.gateway.components.server/components}
+       (handle-query encoded-query components)))

@@ -24,10 +24,7 @@
     (assoc this :http-kit (httpkit/run-server
                            (-> #'app
                                (wrap-components this)
-                               (wrap-content-type "application/json")
-                               #_(wrap-cors :access-control-allow-origin [#".*"]
-                                            :access-control-allow-methods [:get :post])
-                               #_(wrap-log))
+                               (wrap-content-type "application/json"))
                            {:port port})))
   (stop [this]
     (log/info "Stopping server")

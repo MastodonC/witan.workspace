@@ -10,11 +10,9 @@
      conn
      (hayt/create-table
       "events"
-      (hayt/column-definitions {:key              :text
-                                :id               :uuid
-                                :event_id         :uuid
-                                :event_version    :text
-                                :creator           :uuid
+      (hayt/column-definitions {:id               :uuid
+                                :key              :text
+                                :version          :text
                                 :origin           :text
                                 :received_at      :timestamp
                                 :original_payload :text

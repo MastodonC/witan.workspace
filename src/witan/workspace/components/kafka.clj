@@ -1,6 +1,6 @@
 (ns witan.workspace.components.kafka
   (:require [com.stuartsierra.component :as component]
-            [witan.workspace.protocols  :refer [SendMessage]]
+            [witan.workspace.protocols  :as p]
             [taoensso.timbre            :as log]
             [cheshire.core              :as json]
             [clj-kafka.producer         :as kafka]
@@ -10,13 +10,13 @@
             [clojure.core.async         :as async :refer [go-loop chan <! close! put!]]))
 
 (defrecord KafkaProducer [host port]
-  SendMessage
+  p/SendMessage
   (send-message! [component topic raw-message]
     (let [message (json/generate-string raw-message)]
       (if-let [{:keys [connection]} component]
         (if-let [error (kafka/send-message connection (kafka/message (name topic) (.getBytes message)))]
           (log/error "Failed to send message to Kafka:" error)
-          (log/debug "Message was sent to Kafka:" topic message))
+          (log/debug "Message was sent to Kafka:" topic (count message)))
         (log/error "There is no connection to Kafka."))))
 
   component/Lifecycle

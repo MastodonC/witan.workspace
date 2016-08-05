@@ -10,8 +10,7 @@
             [witan.workspace.components.cassandra :refer [new-cassandra-connection]]
             [witan.workspace.components.server    :refer [new-http-server]]
             [witan.workspace.command              :refer [command-receiver]]
-            [witan.workspace.event                :refer [event-receiver]])
-  (:gen-class))
+            [witan.workspace.event                :refer [event-receiver]]))
 
 (defn new-system
   ([profile]

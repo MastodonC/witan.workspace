@@ -7,17 +7,6 @@
   [x]
   ((comp even? count) x))
 
-(def KafkaEvent
-  {:event s/Keyword
-   :params s/Any
-   :version (s/pred util/version?)
-   :command {:version (s/pred util/version?)
-             :original s/Keyword
-             :id s/Str}
-   :id s/Uuid
-   :origin s/Str
-   :created-at sc/ISO-Date-Time})
-
 (def WorkflowBranch
   [(s/one s/Keyword "pred")
    (s/one s/Keyword "exit")

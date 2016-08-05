@@ -83,6 +83,11 @@
   [_ id]
   (some #(when (= id (:workspace/id %)) %) (get-workspaces)))
 
+(defn get-model-by-name-and-version
+  [_ name version]
+  (some #(when (and (= (:witan/name (:metadata %)) name)
+                    (= (:witan/version (:metadata %)) version)) %) all-models))
+
 (defn dt->str
   [k]
   (fn [e]
@@ -109,16 +114,18 @@
 
 (def graph
   {;; workspaces by owner
-   (gr/with :workspaces/list-by-owner get-workspaces-by-owner)
+   (gr/with :workspace/list-by-owner get-workspaces-by-owner)
    workspace-fields
    ;; workspace by id
-   (gr/with :workspaces/by-id get-workspace-by-id)
+   (gr/with :workspace/by-id get-workspace-by-id)
    workspace-fields
    ;;  functions
-   (gr/with :workspaces/available-functions get-available-functions)
+   (gr/with :workspace/available-functions get-available-functions)
    function-fields
    ;; models
-   (gr/with :workspaces/available-models get-available-models)
+   (gr/with :workspace/available-models get-available-models)
+   model-fields
+   (gr/with :workspace/model-by-name-and-version get-model-by-name-and-version)
    model-fields})
 
 (defn query

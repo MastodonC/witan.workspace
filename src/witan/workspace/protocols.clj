@@ -20,9 +20,12 @@
 
 ;;;;;;;;;;
 
-(defprotocol CommandProcessor
+(defprotocol Processor
   (params [this])
-  (process [this params]))
+  (process [this params components]))
 
 (defmulti command-processor
+  (fn [command version] [command version]))
+
+(defmulti event-processor
   (fn [command version] [command version]))

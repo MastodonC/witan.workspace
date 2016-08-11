@@ -1,7 +1,6 @@
 (ns witan.workspace.query
   (:require [taoensso.timbre           :as log]
             [schema.core               :as s]
-            [witan.workspace.workspace :as w]
             [graph-router.core         :as gr]
             [clj-time.core             :as t]
             [clj-time.format           :as tf]

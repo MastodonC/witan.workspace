@@ -1,5 +1,7 @@
 (ns witan.workspace.util
-  (:require [cheshire.core :as json]))
+  (:require [cheshire.core :as json]
+            [schema.coerce :as coerce]
+            [witan.workspace-api.schema :as was]))
 
 (defn json->clojure
   [json]
@@ -51,3 +53,33 @@
   "Convers hyphens to underscores"
   [x]
   (replacer #(clojure.string/replace % #"-" "_") x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Custom coercion func
+
+(defn uuid-coercion
+  [schema]
+  (when (= schema java.util.UUID)
+    (fn [x]
+      (java.util.UUID/fromString x))))
+
+(defn workflow-node-coercion
+  [schema]
+  (when (= schema was/WorkflowNode)
+    (fn [x]
+      (cond
+        (and
+         (vector? x)
+         (every? string? x)) (mapv keyword x)
+        (and
+         (vector? x)
+         (vector? (last x))) (-> x
+                                 (update 0 keyword)
+                                 (update 1 (partial mapv keyword)))
+        :else nil))))
+
+(defn param-coercion-matcher
+  [schema]
+  (or (coerce/json-coercion-matcher schema)
+      (workflow-node-coercion schema)
+      (uuid-coercion schema)))

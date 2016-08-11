@@ -3,7 +3,7 @@
             [taoensso.timbre            :as log]
             [qbits.alia                 :as alia]
             [qbits.hayt                 :as hayt]
-            [witan.workspace.protocols  :as p :refer [Database]]
+            [witan.workspace.protocols  :as p]
             [witan.workspace.util       :as util]
             [clojure.java.io            :as io]
             [joplin.repl                :as jrepl :refer [migrate]]))
@@ -25,13 +25,13 @@
   [this x]
   (if-let [conn (get this :connection)]
     (try
-      (log/debug "Executing" (hayt/->raw x))
+      (log/trace "Executing" (hayt/->raw x))
       (alia/execute conn x)
       (catch Exception e (log/error "Failed to execute database command:" (str e))))
     (log/error "Unable to execute Cassandra comment - no connection")))
 
 (defrecord Cassandra [host keyspace joplin profile replication-factor]
-  Database
+  p/Database
   (drop-table! [this table]
     (exec this (hayt/drop-table table (hayt/if-exists))))
   (create-table! [this table columns]

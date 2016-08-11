@@ -1,38 +1,54 @@
 (ns witan.workspace.workspace
-  (:require [taoensso.timbre           :as log]
-            [witan.workspace.protocols :as p]
-            [clojure.stacktrace        :as st]
-            [witan.gateway.schema      :as wgs]))
+  (:require [taoensso.timbre            :as log]
+            [witan.workspace.protocols  :as p]
+            [clojure.stacktrace         :as st]
+            [witan.gateway.schema       :as wgs]
+            [witan.workspace-api.schema :as was]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Commands
 
 (defmethod p/command-processor
-  [:workspace/save "1.0"]
+  [:workspace/save "1.0.0"]
   [c v]
-  (reify p/CommandProcessor
-    (params [_] {:workspace/to-save (get wgs/Workspace "1.0")})
-    (process [_ params]
-      (log/debug "SAVING WORKSPACE" params)
-      {:event :workspace/saved
-       :params (merge params
-                      {:id (java.util.UUID/randomUUID)})
-       :version "1.0"})))
+  (reify p/Processor
+    (params [_] {:workspace/to-save (get wgs/WorkspaceMessage "1.0.0")})
+    (process [_ {:keys [workspace/to-save]} _]
+      (log/debug "SAVING WORKSPACE" to-save)
+      {:event/key :workspace/saved
+       :event/version "1.0.0"
+       :event/params to-save})))
+
+(defmethod p/command-processor
+  [:workspace/run "1.0.0"]
+  [c v]
+  (reify p/Processor
+    (params [_] {:workspace/to-run (-> (get wgs/WorkspaceMessage "1.0.0")
+                                       (dissoc #schema.core.OptionalKey{:k :workspace/workflow}
+                                               #schema.core.OptionalKey{:k :workspace/catalog})
+                                       (assoc :workspace/workflow (:workflow was/Workspace)
+                                              :workspace/catalog  (:catalog was/Workspace)))})
+    (process [_ {:keys [workspace/to-run]} _]
+      (log/debug "RUNNING WORKSPACE" to-run)
+      {:event/key :workspace/started-running
+       :event/version "1.0.0"
+       :event/params to-run})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Events
 
-(defmulti process-event!
-  (fn [{:keys [event version]} _] [(keyword event) version]))
+(defmethod p/event-processor
+  [:workspace/saved "1.0.0"]
+  [c v]
+  (reify p/Processor
+    (params [_] (get wgs/WorkspaceMessage "1.0.0"))
+    (process [_ wsp {:keys [db]}]
+      (log/debug "Saving workspace..." wsp))))
 
-(defmethod process-event!
-  [:workspace/created "1.0"]
-  [{:keys [params]} db]
-  (let [{:keys [name owner id]} params
-        tbls [:workspaces_by_id :workspaces_by_owner]
-        args {:id (java.util.UUID/fromString id)
-              :owner (java.util.UUID/fromString owner)
-              :name name
-              :created_at (java.util.Date.)
-              :last_updated (java.util.Date.)}]
-    (run! #(p/insert! db % args) tbls)))
+(defmethod p/event-processor
+  [:workspace/started-running "1.0.0"]
+  [c v]
+  (reify p/Processor
+    (params [_] (get wgs/WorkspaceMessage "1.0.0"))
+    (process [_ wsp {:keys [db]}]
+      (log/debug "Running workspace..." db))))

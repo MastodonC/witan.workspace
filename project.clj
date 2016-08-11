@@ -22,13 +22,12 @@
                  [com.outpace/schema-transit "0.2.3"]
                  [lockedon/graph-router "0.1.7"]
                  ;;
-                 [witan.gateway.schema "0.1.0"]
+                 [witan.gateway.schema "0.1.1"]
                  [witan.workspace-api "0.1.16"]
                  [witan.workspace-executor "0.2.3"]
                  ;;
                  [witan.models.demography "0.1.0-SNAPSHOT"]]
   :source-paths ["src"]
-  :java-opts ["-XX:+UseG1GC" "-server" "-Daeron.client.liveness.timeout=50000000000"]
   :profiles {:uberjar {:aot  [witan.workspace.system]
                        :main witan.workspace.system
                        :uberjar-name "witan.workspace-standalone.jar"}

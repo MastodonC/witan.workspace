@@ -37,7 +37,7 @@
                  [witan.workspace-api "0.1.19"]
                  [witan.workspace-executor "0.2.4"]
                  ;;
-                 [witan.models.demography "0.1.0-SNAPSHOT"]]
+                 [witan.models.demography "0.1.0"]]
   :source-paths ["src"]
   :profiles {:uberjar {:aot  [witan.workspace.system]
                        :main witan.workspace.system

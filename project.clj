@@ -21,10 +21,21 @@
                  [com.cognitect/transit-clj "0.8.288"]
                  [com.outpace/schema-transit "0.2.3"]
                  [lockedon/graph-router "0.1.7"]
+                 [org.clojure/data.csv "0.1.3"]
+                 [net.mikera/core.matrix "0.52.2"]
+                 ;;
+                 [commons-logging/commons-logging "1.2"]
+                 [com.fasterxml.jackson.core/jackson-annotations "2.6.3"]
+                 [com.fasterxml.jackson.core/jackson-core "2.6.3"]
+                 [amazonica "0.3.73" :exclusions [com.fasterxml.jackson.dataformat/jackson-dataformat-cbor
+                                                  com.google.guava/guava
+                                                  commons-logging
+                                                  commons-codec
+                                                  com.fasterxml.jackson.core/jackson-core]]
                  ;;
                  [witan.gateway.schema "0.1.1"]
-                 [witan.workspace-api "0.1.16"]
-                 [witan.workspace-executor "0.2.3"]
+                 [witan.workspace-api "0.1.19"]
+                 [witan.workspace-executor "0.2.4"]
                  ;;
                  [witan.models.demography "0.1.0-SNAPSHOT"]]
   :source-paths ["src"]

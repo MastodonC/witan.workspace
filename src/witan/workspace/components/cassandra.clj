@@ -8,7 +8,7 @@
             [clojure.java.io            :as io]
             [joplin.repl                :as jrepl :refer [migrate]]))
 
-(defn create-workspace!
+(defn create-keyspace!
   [host keyspace replication-factor]
   (alia/execute
    (alia/connect (alia/cluster {:contact-points [host]}))
@@ -58,7 +58,7 @@
   component/Lifecycle
   (start [component]
     (log/info "Bootstrapping Cassandra...")
-    (create-workspace! host keyspace replication-factor)
+    (create-keyspace! host keyspace replication-factor)
     (let [joplin-config (jrepl/load-config (io/resource joplin))]
       (->> profile
            (migrate joplin-config)

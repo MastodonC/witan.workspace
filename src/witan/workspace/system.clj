@@ -31,14 +31,17 @@
       :kafka-consumer-commands (component/using
                                 (new-kafka-consumer (merge {:topic    :command
                                                             :group-id "witan.workspace.consumer"
-                                                            :receiver command-receiver} (-> config :kafka :zk)))
-                                {:receiver-ctx :kafka-producer})
+                                                            :receiver command-receiver
+                                                            :receiver-ctx [:kp]} (-> config :kafka :zk)))
+                                {:kp :kafka-producer})
 
       :kafka-consumer-events   (component/using
                                 (new-kafka-consumer (merge {:topic :event
                                                             :group-id "witan.workspace.consumer"
-                                                            :receiver event-receiver} (-> config :kafka :zk)))
-                                {:receiver-ctx :db})))))
+                                                            :receiver event-receiver
+                                                            :receiver-ctx [:kp :db]} (-> config :kafka :zk)))
+                                {:kp :kafka-producer
+                                 :db :db})))))
 
 (defn -main [& [arg]]
   (let [profile (or (keyword arg) :production)]

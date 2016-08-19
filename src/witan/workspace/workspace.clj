@@ -17,9 +17,7 @@
             [clojure.java.io               :as io]
             [clojure.core.matrix.dataset   :as ds]
             [clojure.core.matrix           :as m]
-            [base64-clj.core               :as base64]
-            [clj-time.core                 :as t]
-            [clj-time.format               :as tf])
+            [base64-clj.core               :as base64])
   (:import java.util.zip.GZIPInputStream
            java.util.zip.GZIPOutputStream))
 
@@ -28,10 +26,6 @@
 
 (def s3-data-bucket "witan-data")
 (def s3-result-bucket "witan-workspace-results")
-
-(defn timestamp
-  []
-  (tf/unparse (tf/formatters :basic-date-time-no-ms) (t/now)))
 
 (defn gunzip-text
   "https://gist.github.com/bpsm/1858654"
@@ -148,7 +142,7 @@
          :event/version "1.0.0"
          :event/params {:workspace/result-url (str url)
                         :workspace/original-location result-location
-                        :workspace/ttl (tf/unparse (tf/formatters :basic-date-time) ttl)}}))))
+                        :workspace/ttl (util/timestamp :basic-date-time ttl)}}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Events
@@ -201,7 +195,7 @@
                 (let [paths (into {}
                                   (map (fn [[result-id csv]]
                                          (let [path (str id "/"
-                                                         (timestamp) "/"
+                                                         (util/timestamp) "/"
                                                          (-> (str result-id)
                                                              (subs 1)
                                                              (clojure.string/replace "/" "__")) ".csv")]

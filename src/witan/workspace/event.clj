@@ -8,6 +8,7 @@
             [witan.gateway.schema       :as wgs]
             [witan.workspace-api.schema :as was]
             [witan.workspace.coercion   :as wc]
+            [witan.workspace.util       :as util]
             [cheshire.core              :as json]))
 
 (defn send-event!
@@ -17,18 +18,13 @@
 
 (defn create-event
   [receipt body]
-  (let [iso-date-time-now (->> (java.util.Date.)
-                               (json/generate-string)
-                               (drop 1)
-                               (butlast)
-                               (apply str))]
   (merge
    body
    {:event/id (java.util.UUID/randomUUID)
-    :event/created-at iso-date-time-now
+    :event/created-at (util/timestamp)
     :event/origin "witan.workspace.command"
     :command/receipt receipt
-    :message/type :event})))
+    :message/type :event}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

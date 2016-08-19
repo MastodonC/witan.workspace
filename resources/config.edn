@@ -9,7 +9,7 @@
              :replication-factor #profile {:development 1
                                            :production 3}}
  :webserver {:port 20015}
- :log {:level #profile {:development :debug
+ :log {:level #profile {:development :trace
                         :production :info}}
  :peer {:host #profile {:development "127.0.0.1"
                         :production "witan-workspace-peer.marathon.mesos"}

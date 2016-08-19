@@ -1,13 +1,33 @@
 (ns witan.workspace.event
-  (:require [taoensso.timbre :as log]
-            [witan.workspace.protocols :as p]
-            [base64-clj.core :as base64]
-            [clojure.stacktrace :as st]
-            [schema.coerce :as coerce]
-            [witan.workspace.util :as u]
-            [witan.workspace.workspace :as w]
-            [witan.gateway.schema :as wgs]
-            [witan.workspace-api.schema :as was]))
+  (:require [taoensso.timbre            :as log]
+            [schema.core                :as s]
+            [witan.workspace.protocols  :as p]
+            [base64-clj.core            :as base64]
+            [clojure.stacktrace         :as st]
+            [schema.coerce              :as coerce]
+            [witan.gateway.schema       :as wgs]
+            [witan.workspace-api.schema :as was]
+            [witan.workspace.coercion   :as wc]
+            [witan.workspace.util       :as util]
+            [cheshire.core              :as json]
+            [witan.workspace.time       :as time]))
+
+(defn send-event!
+  [sender event]
+  (log/info "Sending event:" (:event/key event) (:event/version event))
+  (p/send-message! sender :event event))
+
+(defn create-event
+  [receipt body]
+  (merge
+   body
+   {:event/id (java.util.UUID/randomUUID)
+    :event/created-at (time/timestamp)
+    :event/origin "witan.workspace.command"
+    :command/receipt receipt
+    :message/type :event}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn store-event!
   [event db]
@@ -24,15 +44,14 @@
                          (log/error "An error occurred whilst storing the event:" e)
                          (st/print-stack-trace e)))))
 
-;; -------------------------------------------------------------
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmethod p/event-processor
   :default
   [c v]
-  (let [error {:error (format "Event and version combination is not supported: %s %s" c v)}]
-    (reify p/Processor
-      (params [_] error)
-      (process [_ _ _] (log/warn error)))))
+  (reify p/Processor
+    (params [_] s/Any)
+    (process [_ _ _] (comment "Do nothing!"))))
 
 (defn- params-schema
   [{:keys [event/key event/version]}]
@@ -44,19 +63,21 @@
   (let [params-schema' (params-schema msg)]
     (if (contains? params-schema' :error)
       params-schema'
-      (let [result ((coerce/coercer params-schema' u/param-coercion-matcher) params)]
+      (let [result ((coerce/coercer params-schema' wc/param-coercion-matcher) params)]
         (if (contains? result :error)
           (merge {:error (str "Event parameter schema coercion failed: " (pr-str (:error result)))} msg)
           (assoc msg :event/params result))))))
 
 (defn- process-event!
   "Convert the event"
-  [{:keys [event/key event/version event/params]
-    :as msg} db]
-  (p/process (p/event-processor (keyword key) version) params {:db db}))
+  [{:keys [event/key event/version event/params command/receipt]
+    :as msg} db event-sender]
+  (p/process (p/event-processor (keyword key) version)
+             (merge params {:command/receipt receipt})
+             {:db db :event-sender event-sender}))
 
 (defn event-receiver
-  [original db]
+  [original {db :db event-sender :kp}]
   (try
     (let [event ((coerce/coercer (get wgs/Event "1.0.0") coerce/json-coercion-matcher) original)]
       (if (and (not (contains? event :error))
@@ -64,9 +85,9 @@
         (let [_ (wgs/validate-message "1.0.0" :event event)
               event (coerce-params event)]
           (if (not (contains? event :error))
-            (do (log/debug "Received event" (select-keys event [:event/key :event/version :event/origin]))
+            (do (log/debug "Received event" (select-keys event [:event/key :event/version :event/origin :command/receipt]))
                 (store-event! event db)
-                (process-event! event db))
+                (process-event! event db event-sender))
             (log/error "Event produced an error:" event)))
         (log/warn "Received a bad event:" event)))
     (catch Throwable e

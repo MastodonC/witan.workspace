@@ -4,7 +4,7 @@
             [qbits.alia                 :as alia]
             [qbits.hayt                 :as hayt]
             [witan.workspace.protocols  :as p]
-            [witan.workspace.util       :as util]
+            [witan.workspace.coercion   :as wc]
             [clojure.java.io            :as io]
             [joplin.repl                :as jrepl :refer [migrate]]))
 
@@ -41,16 +41,16 @@
       using (exec this (hayt/insert table (hayt/values row) (apply hayt/using using)))
       :else (exec this (hayt/insert table (hayt/values row)))))
   (insert! [this table row]
-    (p/insert! this table (map util/hyphen->underscore row) {}))
+    (p/insert! this table (map wc/hyphen->underscore row) {}))
   (select* [this table where]
     (let [result (exec this (hayt/select table (hayt/where where)))
-          reformatted (map util/underscore->hyphen result)]
+          reformatted (map wc/underscore->hyphen result)]
       (if (coll? result)
         (map (partial into {}) reformatted)
         reformatted)))
   (select [this table what where]
-    (let [result (exec this (hayt/select table (apply hayt/columns (map util/hyphen->underscore what)) (hayt/where where)))
-          reformatted (map util/underscore->hyphen result)]
+    (let [result (exec this (hayt/select table (apply hayt/columns (map wc/hyphen->underscore what)) (hayt/where where)))
+          reformatted (map wc/underscore->hyphen result)]
       (if (coll? result)
         (map (partial into {}) reformatted)
         reformatted)))

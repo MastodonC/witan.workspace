@@ -63,7 +63,7 @@
                   "auto.offset.reset" "smallest"
                   "auto.commit.enable" "true"}
           consumer (kafka-zk/consumer config)]
-      (start-listening! consumer topic receiver receiver-ctx)
+      (start-listening! consumer topic receiver (select-keys component receiver-ctx))
       (assoc component :consumer consumer)))
 
   (stop [component]

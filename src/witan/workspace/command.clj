@@ -1,15 +1,16 @@
 (ns witan.workspace.command
-  (:require [taoensso.timbre :as log]
-            [witan.workspace.util :as util]
-            [witan.workspace.schema :as ws]
-            [witan.workspace.protocols :as p]
-            [schema.core :as s]
-            [schema-contrib.core :as sc]
-            [schema.coerce :as coerce]
-            [witan.workspace.util :as u]
-            [clojure.stacktrace :as st]
-            [witan.gateway.schema :as wgs]
-            [witan.workspace-api.schema :as was])
+  (:require [taoensso.timbre            :as log]
+            [witan.workspace.util       :as util]
+            [witan.workspace.schema     :as ws]
+            [witan.workspace.protocols  :as p]
+            [schema.core                :as s]
+            [schema-contrib.core        :as sc]
+            [schema.coerce              :as coerce]
+            [clojure.stacktrace         :as st]
+            [witan.gateway.schema       :as wgs]
+            [witan.workspace-api.schema :as was]
+            [witan.workspace.coercion   :as wc]
+            [witan.workspace.event      :as ev])
   (:use [witan.workspace.workspace]))
 
 (defmethod p/command-processor
@@ -21,14 +22,6 @@
       (process [_ _ _] error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn create-event
-  [receipt]
-  {:event/id (java.util.UUID/randomUUID)
-   :event/created-at (util/iso-date-time-now)
-   :event/origin "witan.workspace.command"
-   :command/receipt receipt
-   :message/type :event})
 
 (defn- params-schema
   [{:keys [command/key command/version]}]
@@ -52,7 +45,7 @@
   (let [params-schema' (params-schema msg)]
     (if (contains? params-schema' :error)
       params-schema'
-      (let [result ((coerce/coercer params-schema' u/param-coercion-matcher) params)]
+      (let [result ((coerce/coercer params-schema' wc/param-coercion-matcher) params)]
         (if (contains? result :error)
           (merge {:error (str "Command parameter schema coercion failed: " (pr-str (:error result)))} msg)
           (assoc msg  :command/params  result))))))
@@ -67,18 +60,12 @@
   [{:keys [command/key command/version command/params command/id command/receipt]
     :as msg}]
   (let [result (p/process (p/command-processor (keyword key) version) params nil)]
-    (merge result
-           (create-event receipt))))
-
-(defn- send-event!
-  [event sender]
-  (log/info "Sending event:" (:event/key event) (:event/version event))
-  (p/send-message! sender :event event))
+    (ev/create-event receipt result)))
 
 ;;;;
 
 (defn command-receiver
-  [msg event-sender]
+  [msg {event-sender :kp}]
   (try
     (let [command (coerce-message msg)]
       (if (and (not (contains? command :error))
@@ -97,17 +84,17 @@
             (if (contains? event :error)
               (do
                 (log/error "Command produced an error:" (:error event) command)
-                (send-event! (merge
-                              {:event/params (merge event {:original msg})
-                               :event/version "1.0.0"
-                               :event/key (-> command
-                                              :command/key
-                                              (str)
-                                              (subs 1)
-                                              (str "-failed")
-                                              (keyword))}
-                              (create-event (:command/receipt command))) event-sender))
-              (send-event! event event-sender))))
+                (ev/send-event! event-sender (ev/create-event
+                                              (:command/receipt command)
+                                              {:event/params (merge event {:original msg})
+                                               :event/version "1.0.0"
+                                               :event/key (-> command
+                                                              :command/key
+                                                              (str)
+                                                              (subs 1)
+                                                              (str "-failed")
+                                                              (keyword))})))
+              (ev/send-event! event-sender event))))
         (log/warn "Received a bad command:" command)))
     (catch Exception e (do
                          (log/error "An error occurred:" e)

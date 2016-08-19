@@ -8,7 +8,6 @@
             [witan.workspace-api.utils     :as wau]
             [witan.workspace-executor.core :as wex]
             [witan.workspace.query         :as q]
-            [witan.workspace.util          :as util]
             [witan.workspace.event         :as ev]
             [clojure.core.async            :as async]
             [amazonica.aws.s3              :as s3]
@@ -18,7 +17,7 @@
             [clojure.core.matrix.dataset   :as ds]
             [clojure.core.matrix           :as m]
             [base64-clj.core               :as base64]
-            [clj-time.core                 :as t])
+            [witan.workspace.time          :as time])
   (:import java.util.zip.GZIPInputStream
            java.util.zip.GZIPOutputStream))
 
@@ -134,16 +133,16 @@
     (params [_] {:workspace/result-location s/Str})
     (process [_ {:keys [workspace/result-location]} _]
       (log/warn "GENERATING PRESIGNED URL - PLEASE DEPRECATE THIS COMMAND IN FAVOR OF DATASTORE")
-      (let [ttl (-> 1 t/hours t/from-now)
+      (let [ttl (time/hours-from-now 1)
             url (s3/generate-presigned-url
                  s3-result-bucket
                  result-location
-                 (-> 1 t/hours t/from-now))]
+                 ttl)]
         {:event/key :workspace/result-url-created
          :event/version "1.0.0"
          :event/params {:workspace/result-url (str url)
                         :workspace/original-location result-location
-                        :workspace/ttl (util/timestamp :basic-date-time ttl)}}))))
+                        :workspace/ttl (time/timestamp :basic-date-time ttl)}}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Events
@@ -196,7 +195,7 @@
                 (let [paths (into {}
                                   (map (fn [[result-id csv]]
                                          (let [path (str id "/"
-                                                         (util/timestamp :basic-date-time-no-ms) "/"
+                                                         (time/timestamp :basic-date-time-no-ms) "/"
                                                          (-> (str result-id)
                                                              (subs 1)
                                                              (clojure.string/replace "/" "__")) ".csv")]

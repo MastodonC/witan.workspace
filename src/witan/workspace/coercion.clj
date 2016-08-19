@@ -44,6 +44,6 @@
   (replacer #(clojure.string/replace % #"_" "-") x))
 
 (defn hyphen->underscore
-  "Convers hyphens to underscores"
+  "Converts hyphens to underscores"
   [x]
   (replacer #(clojure.string/replace % #"-" "_") x))

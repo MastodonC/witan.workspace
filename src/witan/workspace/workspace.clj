@@ -195,7 +195,7 @@
                 (let [paths (into {}
                                   (map (fn [[result-id csv]]
                                          (let [path (str id "/"
-                                                         (util/timestamp) "/"
+                                                         (util/timestamp :basic-date-time-no-ms) "/"
                                                          (-> (str result-id)
                                                              (subs 1)
                                                              (clojure.string/replace "/" "__")) ".csv")]

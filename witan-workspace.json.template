@@ -18,7 +18,7 @@
               "containerPort": 20015,
               "hostPort": 20015,
               "protocol": "tcp"
-          },
+          }
       ]
     }
   },

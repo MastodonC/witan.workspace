@@ -17,9 +17,10 @@
    (let [config (read-config (clojure.java.io/resource "config.edn") {:profile profile})]
 
      ;; logging config
-     (if (= profile :production)
-       (timbre/merge-config! (assoc (:log config) :output-fn logstash/output-fn))
-       (timbre/merge-config! (:log config)))
+     (timbre/merge-config!
+      (assoc (:log config)
+             :output-fn (partial logstash/output-fn {:stacktrace-fonts {}})
+             :timestamp-opts logstash/logback-timestamp-opts))
 
      ;; create system
      (component/system-map
@@ -45,5 +46,12 @@
 
 (defn -main [& [arg]]
   (let [profile (or (keyword arg) :production)]
+
+    ;; https://stuartsierra.com/2015/05/27/clojure-uncaught-exceptions
+    (Thread/setDefaultUncaughtExceptionHandler
+     (reify Thread$UncaughtExceptionHandler
+       (uncaughtException [_ thread ex]
+         (timbre/error "Unhandled exception:" ex))))
+
     (component/start
      (new-system profile))))

@@ -1,3 +1,4 @@
+
 {
   "container": {
     "type": "DOCKER",
@@ -7,6 +8,7 @@
          {"key": "env", "value": "ENVIRONMENT=@@ENVIRONMENT@@"},
          {"key": "log-driver", "value": "gelf"},
          {"key": "log-opt", "value": "gelf-address=udp://logstash.@@VPC@@-vpc.kixi:12201"},
+         {"key": "log-opt", "value": "tag=@@ENVIRONMENT@@"},
          {"key": "label", "value": "cluster=@@ENVIRONMENT@@"},
          {"key": "label", "value": "application=witan-workspace"}
       ],
@@ -17,11 +19,6 @@
               "hostPort": 20015,
               "protocol": "tcp"
           },
-          {
-              "containerPort": 5001,
-              "hostPort": 20016,
-              "protocol": "tcp"
-          }
       ]
     }
   },

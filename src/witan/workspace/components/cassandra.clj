@@ -11,7 +11,7 @@
 (defn create-keyspace!
   [host keyspace replication-factor]
   (alia/execute
-   (alia/connect (alia/cluster {:contact-points [host]}))
+   (alia/connect (alia/cluster {:contact-points host}))
    (hayt/create-keyspace keyspace
                          (hayt/if-exists false)
                          (hayt/with {:replication

@@ -1,9 +1,11 @@
-{:kafka {:zk {:host #profile {:development #or [#env ZOOKEEPER "127.0.0.1"]
-                              :production "master.mesos"}
+{:kafka {:zk {:host #profile {:development "127.0.0.1"
+                              :production  "master.mesos"}
               :port 2181}}
 
- :cassandra {:host #profile {:development #or [#env CASSANDRA "127.0.0.1"]
-                             :production "cassandra-dcos-node.cassandra.dcos.mesos"}
+ :cassandra {:host #profile {:development ["127.0.0.1"]
+                             :production  ["node-0.cassandra.mesos"
+                                           "node-1.cassandra.mesos"
+                                           "node-2.cassandra.mesos"] }
              :keyspace "witan_workspace"
              :joplin "joplin.edn"
              :replication-factor #profile {:development 1

@@ -58,17 +58,22 @@
   component/Lifecycle
   (start [component]
     (log/info "Bootstrapping Cassandra...")
-    (create-keyspace! host keyspace replication-factor)
-    (let [joplin-config (jrepl/load-config (io/resource joplin))]
-      (->> profile
-           (migrate joplin-config)
-           (with-out-str)
-           (clojure.string/split-lines)
-           (run! #(log/info "> JOPLIN:" %))))
+    (try
+      (do (create-keyspace! host keyspace replication-factor)
+          (let [joplin-config (jrepl/load-config (io/resource joplin))]
+            (->> profile
+                 (migrate joplin-config)
+                 (with-out-str)
+                 (clojure.string/split-lines)
+                 (run! #(log/info "> JOPLIN:" %))))
 
-    (log/info "Connecting to Cassandra..." host keyspace)
-    (let [conn (create-connection host keyspace)]
-      (assoc component :connection conn)))
+          (log/info "Connecting to Cassandra..." host keyspace)
+          (let [conn (create-connection host keyspace)]
+            (assoc component :connection conn)))
+      (catch Exception ex
+        (do
+          (log/error "Failed to start Cassandra:" ex)
+          component))))
 
   (stop [component]
     (log/info "Disconnecting from Cassandra...")

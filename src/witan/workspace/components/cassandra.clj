@@ -19,7 +19,7 @@
                                       :replication_factor replication-factor}}))))
 (defn create-connection
   [host keyspace]
-  (alia/connect (alia/cluster {:contact-points [host]}) keyspace))
+  (alia/connect (alia/cluster {:contact-points host}) keyspace))
 
 (defn exec
   [this x]
